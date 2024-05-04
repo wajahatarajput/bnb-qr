@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const socketIo = require('socket.io'); // real time data streaming 
 const { User, Student, Teacher, Course, Session } = require('./schemas');
+const { jwtMiddleware } = require('./middleware');
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true });
@@ -27,7 +28,7 @@ app.use(cors());
 // REST APIs
 
 // Create user //admin
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
         await user.save();
@@ -39,7 +40,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // Get users
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', jwtMiddleware, async (req, res) => {
     try {
         const users = await User.find();
 
@@ -51,7 +52,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Get user by ID
-app.get('/api/users/:id', async (req, res) => {
+app.get('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const user = await User.findById(id);
@@ -68,7 +69,7 @@ app.get('/api/users/:id', async (req, res) => {
 });
 
 // Update user by ID
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -87,7 +88,7 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // Delete user by ID
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const user = await User.findByIdAndDelete(id);
@@ -124,7 +125,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Get students
-app.get('/api/students', async (req, res) => {
+app.get('/api/students', jwtMiddleware, async (req, res) => {
     try {
         const students = await Student.find().populate('user');
         res.status(200).send(students);
@@ -134,7 +135,7 @@ app.get('/api/students', async (req, res) => {
 });
 
 // Get student by ID
-app.get('/api/students/:id', async (req, res) => {
+app.get('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -151,7 +152,7 @@ app.get('/api/students/:id', async (req, res) => {
 });
 
 // Create student
-app.post('/api/students', async (req, res) => {
+app.post('/api/students', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
         await user.save();
@@ -168,7 +169,7 @@ app.post('/api/students', async (req, res) => {
 });
 
 // Update student by ID
-app.put('/api/students/:id', async (req, res) => {
+app.put('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -199,7 +200,7 @@ app.put('/api/students/:id', async (req, res) => {
 });
 
 // Delete student by ID
-app.delete('/api/students/:id', async (req, res) => {
+app.delete('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -226,7 +227,7 @@ app.delete('/api/students/:id', async (req, res) => {
 });
 
 // Get teachers
-app.get('/api/teachers', async (req, res) => {
+app.get('/api/teachers', jwtMiddleware, async (req, res) => {
     try {
         const teachers = await Teacher.find().populate('user');
         res.status(200).send(teachers);
@@ -236,7 +237,7 @@ app.get('/api/teachers', async (req, res) => {
 });
 
 // Get teacher by ID
-app.get('/api/teachers/:id', async (req, res) => {
+app.get('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -253,7 +254,7 @@ app.get('/api/teachers/:id', async (req, res) => {
 });
 
 // Create teacher
-app.post('/api/teachers', async (req, res) => {
+app.post('/api/teachers', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
         await user.save();
@@ -270,7 +271,7 @@ app.post('/api/teachers', async (req, res) => {
 });
 
 // Update teacher by ID
-app.put('/api/teachers/:id', async (req, res) => {
+app.put('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -301,7 +302,7 @@ app.put('/api/teachers/:id', async (req, res) => {
 });
 
 // Delete teacher by ID
-app.delete('/api/teachers/:id', async (req, res) => {
+app.delete('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -326,7 +327,7 @@ app.delete('/api/teachers/:id', async (req, res) => {
 });
 
 // Get courses
-app.get('/api/courses', async (req, res) => {
+app.get('/api/courses', jwtMiddleware, async (req, res) => {
     try {
         const courses = await Course.find();
         res.status(200).send(courses);
@@ -336,7 +337,7 @@ app.get('/api/courses', async (req, res) => {
 });
 
 // Get course by ID
-app.get('/api/courses/:id', async (req, res) => {
+app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -353,7 +354,7 @@ app.get('/api/courses/:id', async (req, res) => {
 });
 
 // Create course
-app.post('/api/courses', async (req, res) => {
+app.post('/api/courses', jwtMiddleware, async (req, res) => {
     try {
         const course = new Course(req.body);
         await course.save();
@@ -364,7 +365,7 @@ app.post('/api/courses', async (req, res) => {
 });
 
 // Update course by ID
-app.put('/api/courses/:id', async (req, res) => {
+app.put('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -384,7 +385,7 @@ app.put('/api/courses/:id', async (req, res) => {
 });
 
 // Delete course by ID
-app.delete('/api/courses/:id', async (req, res) => {
+app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -402,9 +403,32 @@ app.delete('/api/courses/:id', async (req, res) => {
 });
 
 // Create session
-app.post('/api/sessions', async (req, res) => {
+app.post('/api/sessions', jwtMiddleware, async (req, res) => {
     try {
-        const session = new Session(req.body);
+        const { geoLocation, courseId, roomNumber, teacher } = req.body;
+
+        const course = await Course.findOne({ course_code: courseId });
+
+        // If the course is not found
+        if (!course) {
+            return res.status(404).json({ message: "Course not found" });
+        }
+
+
+        // Find the teacher by teacher ID associated with the course
+        const teachers = await Teacher.findOne({ user: teacher });
+
+        // If the teacher is not found
+        if (!teachers) {
+            return res.status(404).json({ message: "Teacher not found" });
+        }
+
+        const session = new Session({
+            geoLocation,
+            courseId: course,
+            roomNumber,
+            teacher: teachers
+        });
         await session.save();
         res.status(201).send(session);
     } catch (error) {
@@ -416,7 +440,7 @@ app.post('/api/sessions', async (req, res) => {
 // ----------------------------------------------------
 
 // POST route to assign a course to a teacher
-app.post('/assigncourse/:teacherId/:courseId', async (req, res) => {
+app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) => {
     const { teacherId, courseId } = req.params;
 
     try {
@@ -445,7 +469,7 @@ app.post('/assigncourse/:teacherId/:courseId', async (req, res) => {
 
 
 // POST request to register a student in a course
-app.post('/registercourse/:userId/:course_code', async (req, res) => {
+app.post('/registercourse/:userId/:course_code', jwtMiddleware, async (req, res) => {
     const { userId, course_code } = req.params;
     try {
         // Check if student and course exist

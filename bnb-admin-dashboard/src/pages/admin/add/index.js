@@ -1,12 +1,12 @@
-import axios from 'axios';
 import React, { useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { server } from '../../../helpers';
 
 const AddAdminPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await axios.post('http://localhost:5000/api/users', {
+        await server.post('/api/users', {
             username: e.target[0].value,
             password: e.target[1].value,
             first_name: e.target[2].value,

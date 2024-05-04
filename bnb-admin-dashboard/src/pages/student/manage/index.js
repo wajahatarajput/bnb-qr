@@ -1,18 +1,19 @@
-import axios from 'axios';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { server } from '../../../helpers';
 
 const ManageStudents = () => {
     const [students, setStudents] = useState([]);
 
     const getStudentsData = useCallback(async () => {
-        await axios.get('http://localhost:5000/api/students').then((res) => {
+        await server.get('/api/students').then((res) => {
             setStudents(res.data)
         })
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await axios.delete(`http://localhost:5000/api/students/${id}`).then((res) => {
+        await server.delete(`/api/students/${id}`).then((res) => {
             setStudents(students => students.filter(student => student._id !== id));
         })
     }, []);

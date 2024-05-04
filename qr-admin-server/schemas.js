@@ -117,7 +117,8 @@ const sessionSchema = new mongoose.Schema({
         required: true
     },
     geoLocations: {
-        type: [String] // Array of geolocation
+        type: [String], // Array of geolocation
+        required: true
     },
     attendance: [{
         student: {
@@ -131,6 +132,7 @@ const sessionSchema = new mongoose.Schema({
     }],
     sessionTime: {
         type: Date, // Assuming session time is a Date object
+        default: Date.now(),
         required: true
     },
     roomNumber: {

@@ -1,11 +1,12 @@
 import React from 'react';
-import axios from 'axios';
+import { server } from '../../../helpers';
+
 
 function CreateCourse() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:5000/api/courses', {
+            const res = await server.post('/api/courses', {
                 name: e.target[0].value,
                 department: e.target[1].value,
                 course_code: e.target[2].value,

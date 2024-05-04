@@ -1,8 +1,9 @@
 import React, { createContext, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
+
 import { toast } from 'react-toastify';
 import Cookies from 'universal-cookie';
+import { server } from "../../helpers";
 
 // Create a context to hold authentication state and related functions
 const AuthContext = createContext();
@@ -21,11 +22,13 @@ export const AuthProvider = ({ children }) => {
     // Function to handle login
     const login = async (params) => {
         // Logic to perform login
-        await axios.post('http://localhost:5000/api/login', params).then((res) => {
+        await server.post('/api/login', params).then((res) => {
             if (res.data.token) {
                 toast.success('Login Successfully')
                 setIsAuthenticated(true);
                 cookies.set("authToken", res.data.token);
+                localStorage.setItem('authToken', res.data.token)
+
                 navigate("/dashboard");
             } else {
                 toast.error('Invalid Credentials')
