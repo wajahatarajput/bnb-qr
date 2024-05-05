@@ -4,9 +4,9 @@ const bodyParser = require('body-parser'); // request json handle
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const socketIo = require('socket.io'); // real time data streaming 
 const { User, Student, Teacher, Course, Session } = require('./schemas');
 const { jwtMiddleware } = require('./middleware');
+const socketIO = require('socket.io');
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true });
@@ -20,7 +20,10 @@ db.once('open', function () {
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+
+// Initialize Socket.IO with the HTTP server instance
+// const io = require('socket.io')(server);
+
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -117,7 +120,7 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ userId: user._id }, 'bnb_aatika');
 
-        res.status(200).json({ token, id: user?._id });
+        res.status(200).json({ token, id: user?._id, username: user.username });
     } catch (error) {
         console.error(error);
         res.status(200).json({ message: "Server Error" });
@@ -270,6 +273,24 @@ app.post('/api/teachers', jwtMiddleware, async (req, res) => {
     }
 });
 
+// Create course
+app.post('/api/teachers/courses', jwtMiddleware, async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        // Find the teacher based on the user ID and populate the courses field
+        const teacher = await Teacher.findOne({ user: id }).populate('courses');
+
+        if (!teacher) {
+            return { success: false, message: 'Teacher not found' };
+        }
+        const courses = teacher.courses;
+        res.status(201).send(courses);
+    } catch (error) {
+        res.status(200).send(error);
+    }
+});
+
 // Update teacher by ID
 app.put('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
@@ -338,19 +359,29 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
 
 // Get course by ID
 app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
+    // try {
+    const { id } = req.params;
 
-        // Find the course
-        const course = await Course.findById(id);
+    // Find the course
+    const course = await Course.findOne({ course_code: id }).populate('students');
 
-        if (!course) {
-            return res.status(200).send({ message: 'Course not found' });
-        }
-        res.send(course);
-    } catch (error) {
-        res.status(200).send(error);
+    if (!course) {
+        return res.status(404).send({ message: 'Course not found' });
     }
+
+    // Extract student IDs
+    const studentIds = course.students.map(student => student._id);
+
+    // Find students
+    const students = await Student.find({ _id: { $in: studentIds } }).populate('user');
+
+    course.students = students;
+
+
+    res.send(course);
+    // } catch (error) {
+    //     res.status(200).send(error);
+    // }
 });
 
 // Create course
@@ -413,8 +444,6 @@ app.post('/api/sessions', jwtMiddleware, async (req, res) => {
         if (!course) {
             return res.status(404).json({ message: "Course not found" });
         }
-
-
         // Find the teacher by teacher ID associated with the course
         const teachers = await Teacher.findOne({ user: teacher });
 
@@ -430,6 +459,13 @@ app.post('/api/sessions', jwtMiddleware, async (req, res) => {
             teacher: teachers
         });
         await session.save();
+
+
+        await Course.findByIdAndUpdate(course?._id, {
+            sessions: session
+        });
+
+
         res.status(201).send(session);
     } catch (error) {
         res.status(200).send(error);
@@ -505,28 +541,41 @@ app.post('/registercourse/:userId/:course_code', jwtMiddleware, async (req, res)
     }
 });
 
-// Socket setup for real-time attendance updates
-io.on('connection', socket => {
-    console.log('New client connected');
+const PORT = process.env.PORT || 5000;
+const io = socketIO(server, {
+    cors: {
+        origin: "*",  // Replace with the origin of your client app
+        methods: ["GET", "POST", 'PUT', 'DELETE']
+    }
+});  // Create a Socket.IO server instance
 
-    socket.on('markAttendance', async data => {
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('markAttendance', async (data) => {
         try {
-            // const attendance = new Attendance(data);
-            // await attendance.save();
-            // Emit socket event for attendance update
-            // io.emit('attendanceUpdate', attendance);
+            // Find the session
+            await Session.findByIdAndUpdate(data?.session, {
+                attendance: [{
+                    student: new mongoose.Types.ObjectId(data?.studentId),
+                    isPresent: data?.isPresent
+                }]
+            }).then(() => {
+                io.emit('attendanceUpdated', { studentId: data?.studentId, status: data?.isPresent });
+            })
         } catch (error) {
             console.error('Error marking attendance:', error);
         }
     });
-
+    // Handle disconnection
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        console.log('User disconnected:', socket.id);
     });
 });
 
+
 // Start server
-const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });

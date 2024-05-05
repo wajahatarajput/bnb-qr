@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook, faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faHome, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './style.css'
 import { useAuth } from '../../providers';
 import { Link } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 function Dashboard(props) {
     const { children } = props;
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const { logout } = useAuth();
+    const { logout, cookies } = useAuth();
 
     const handleAvatarClick = () => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -33,6 +33,11 @@ function Dashboard(props) {
                     <ul className="nav flex-column">
                         <li className="nav-item">
                             <Link to={'/class'} className="nav-link">
+                                <FontAwesomeIcon icon={faHome} />
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to={'/courses'} className="nav-link">
                                 <FontAwesomeIcon icon={faBook} />
                             </Link>
                         </li>
@@ -46,14 +51,17 @@ function Dashboard(props) {
                         <div className="container-fluid d-flex justify-content-end align-items-center py-2">
                             <div>
                                 {/* Logged in user avatar */}
-                                <FontAwesomeIcon icon={faUserCircle} size='lg' color="#fff"
-                                    className="rounded-circle me-5 mt-1"
-                                    onClick={handleAvatarClick}
-                                    style={{ cursor: 'pointer' }}
-                                />
+                                <span>
+                                    <span className='m-2'>{cookies.get('username')}</span>
+                                    <FontAwesomeIcon icon={faUserCircle} size='lg' color="#fff"
+                                        className="rounded-circle me-5 mt-1"
+                                        onClick={handleAvatarClick}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </span>
                                 {/* Dropdown menu */}
                                 {isDropdownOpen && (
-                                    <div className='mt-2' style={{ cursor: 'pointer', zIndex: -1000 }} onClick={handleLogout}>
+                                    <div className='mt-4' style={{ cursor: 'pointer', zIndex: -1000 }} onClick={handleLogout}>
                                         <span className='py-3 px-2 bg-light text-dark text-center rounded' style={{ listStyle: 'none' }}>
                                             Logout
                                         </span>
