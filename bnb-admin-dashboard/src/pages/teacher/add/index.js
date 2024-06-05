@@ -1,12 +1,13 @@
-import axios from 'axios';
+
 import React, { useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { server } from '../../../helpers';
 
 const AddTeacherPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await axios.post('http://localhost:5000/api/teachers', {
+        await server.post('/api/teachers', {
             username: e.target[0].value,
             password: e.target[1].value,
             first_name: e.target[2].value,

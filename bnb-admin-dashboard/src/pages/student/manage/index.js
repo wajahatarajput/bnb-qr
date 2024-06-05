@@ -1,18 +1,19 @@
-import axios from 'axios';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { server } from '../../../helpers';
 
 const ManageStudents = () => {
     const [students, setStudents] = useState([]);
 
     const getStudentsData = useCallback(async () => {
-        await axios.get('http://localhost:5000/api/students').then((res) => {
+        await server.get('/api/students').then((res) => {
             setStudents(res.data)
         })
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await axios.delete(`http://localhost:5000/api/students/${id}`).then((res) => {
+        await server.delete(`/api/students/${id}`).then((res) => {
             setStudents(students => students.filter(student => student._id !== id));
         })
     }, []);
@@ -43,25 +44,25 @@ const ManageStudents = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {students.map((student, index) => (
+                    {students.length > 0 && students.map((student, index) => (
                         <tr key={index}>
-                            <td hidden>{student._id}</td>
-                            <td>{student.user.username}</td>
-                            <td>{student.user.first_name}</td>
-                            <td>{student.user.last_name}</td>
-                            <td>{new Date(student.joiningDate).toLocaleDateString()}</td>
-                            <td>{student.leavingDate ? new Date(student.leavingDate).toLocaleDateString() : 'N/A'}</td>
-                            <td>{student.status}</td>
+                            <td hidden>{student?._id}</td>
+                            <td>{student?.user?.username}</td>
+                            <td>{student?.user?.first_name}</td>
+                            <td>{student?.user?.last_name}</td>
+                            <td>{new Date(student?.joiningDate).toLocaleDateString()}</td>
+                            <td>{student?.leavingDate ? new Date(student?.leavingDate).toLocaleDateString() : 'N/A'}</td>
+                            <td>{student?.status}</td>
                             <td className='d-flex gap-2'>
                                 <Link
                                     className="btn btn-secondary"
-                                    to={`/editstudent/${student._id}`}
+                                    to={`/editstudent/${student?._id}`}
                                 >
                                     Edit
                                 </Link>
                                 <button
                                     className="btn btn-danger"
-                                    onClick={() => handleDelete(student._id)}
+                                    onClick={() => handleDelete(student?._id)}
                                 >
                                     Delete
                                 </button>

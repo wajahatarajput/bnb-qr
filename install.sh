@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Array containing project directories
-projects=("bnb-admin-dashboard" "bnb-student-registration-portal" "qr-admin-server")
+projects=("bnb-admin-dashboard" "bnb-student-registration-portal" "qr-admin-server" "bnb-teachers-portal")
 
 # Function to install dependencies for each project
 install_dependencies() {

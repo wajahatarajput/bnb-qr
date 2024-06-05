@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/bnb.svg'
-import axios from 'axios';
+
 import { ToastContainer, toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../providers';
+import { server } from '../../helpers';
 
 export const SignUp = (props) => {
     const { isAuthenticated, cookies } = useAuth();
@@ -23,7 +24,7 @@ export const SignUp = (props) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await axios.post('http://localhost:5000/api/users', {
+        await server.post('/api/users', {
             username: e.target[0].value,
             password: e.target[1].value,
             first_name: 'admin',

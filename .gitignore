@@ -4,6 +4,7 @@
 bnb-admin-dashboard/node_modules
 bnb-student-registration-portal/node_modules
 qr-admin-server/node_modules
+bnb-teachers-portal/node_modules
 
 /.pnp
 .pnp.js

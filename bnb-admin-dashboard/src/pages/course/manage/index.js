@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { server } from '../../../helpers';
+
 
 const ManageCourses = () => {
     const [courses, setCourses] = useState([]);
 
     const getCoursesData = useCallback(async () => {
-        await axios.get('http://localhost:5000/api/courses').then((res) => {
+        await server.get('/api/courses').then((res) => {
             setCourses(res.data);
         });
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await axios.delete(`http://localhost:5000/api/courses/${id}`).then((res) => {
+        await server.delete(`/api/courses/${id}`).then((res) => {
             setCourses(courses => courses.filter(course => course._id !== id));
         });
     }, []);

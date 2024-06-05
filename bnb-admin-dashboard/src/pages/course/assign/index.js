@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import { server } from '../../../helpers';
+
 
 const AssignCourse = () => {
     const [teachers, setTeachers] = useState([]);
@@ -10,7 +11,7 @@ const AssignCourse = () => {
 
     const getAllTeachers = useCallback(async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/teachers');
+            const response = await server.get('/api/teachers');
             setTeachers(response.data);
         } catch (error) {
             console.error(error);
@@ -19,7 +20,7 @@ const AssignCourse = () => {
 
     const getAllCourses = useCallback(async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/courses');
+            const response = await server.get('/api/courses');
             setCourses(response.data);
         } catch (error) {
             console.error(error);
@@ -33,7 +34,7 @@ const AssignCourse = () => {
 
     const assignCourse = async () => {
         try {
-            const response = await axios.post(`http://localhost:5000/assigncourse/${teacherId}/${courseId}`);
+            const response = await server.post(`/assigncourse/${teacherId}/${courseId}`);
             setMessage(response.data.message);
         } catch (error) {
             setMessage('Error assigning course');

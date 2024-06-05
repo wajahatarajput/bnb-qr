@@ -1,0 +1,15 @@
+.bg-purple {
+    background-color: blueviolet;
+    color: white;
+}
+
+a {
+    color: white !important;
+}
+
+.container {
+    border-radius: 15px;
+    padding: 40px;
+    margin-top: 50px;
+    box-shadow: 5px 2px 20px 0px blueviolet;
+}

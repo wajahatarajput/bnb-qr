@@ -1,7 +1,8 @@
-import axios from 'axios';
+
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { server } from '../../../helpers';
 
 const EditStudentPage = () => {
     const params = useParams();
@@ -9,7 +10,7 @@ const EditStudentPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await axios.put(`http://localhost:5000/api/students/${e.target[0].value}`, {
+        await server.put(`/api/students/${e.target[0].value}`, {
             username: e.target[1].value,
             password: e.target[2].value,
             first_name: e.target[3].value,
@@ -24,7 +25,7 @@ const EditStudentPage = () => {
     }, []);
 
     const getStudentData = useCallback(async () => {
-        await axios.get(`http://localhost:5000/api/students/${params.id}`).then((res) => {
+        await server.get(`/api/students/${params.id}`).then((res) => {
             setStudent(res.data)
         })
     }, [params]);
