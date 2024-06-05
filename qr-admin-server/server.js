@@ -8,8 +8,8 @@ const socketIo = require('socket.io'); // real time data streaming
 const { User, Student, Teacher, Course, Session } = require('./schemas');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true });
-
+mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true, family:4 });
+// mongodb://localhost:27017
 const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));
