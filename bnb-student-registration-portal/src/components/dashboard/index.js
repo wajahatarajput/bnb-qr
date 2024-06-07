@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faUserGraduate, faBook, faUserCircle, faUserCog } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faUsers, faUserGraduate, faBook, faUserCircle, faUserCog, faQrcode, faHistory } from '@fortawesome/free-solid-svg-icons';
 import './style.css'
 import { useAuth } from '../../providers';
 import { Link } from 'react-router-dom';
@@ -36,26 +36,16 @@ function Dashboard(props) {
                                 <FontAwesomeIcon icon={faHome} />
                             </Link>
                         </li>
-                        {/* <li className="nav-item">
-                            <Link to={'/managecourse'} className="nav-link">
-                                <FontAwesomeIcon icon={faBook} />
+                        <li className="nav-item">
+                            <Link to={'/scanner'} className="nav-link">
+                                <FontAwesomeIcon icon={faQrcode} />
                             </Link>
                         </li>
                         <li className="nav-item">
-                            <Link to={'/manageteachers'} className="nav-link active">
-                                <FontAwesomeIcon icon={faUserGraduate} />
+                            <Link to={'/history'} className="nav-link">
+                                <FontAwesomeIcon icon={faHistory} />
                             </Link>
                         </li>
-                        <li className="nav-item">
-                            <Link to={'/managestudent'} className="nav-link">
-                                <FontAwesomeIcon icon={faUsers} />
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to={'/manageadmins'} className="nav-link">
-                                <FontAwesomeIcon icon={faUserCog} />
-                            </Link>
-                        </li> */}
                     </ul>
                 </div>
 
