@@ -9,7 +9,7 @@ const { jwtMiddleware } = require('./middleware');
 const socketIO = require('socket.io');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true, family:4 });
+mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true, family: 4 });
 // mongodb://localhost:27017
 const db = mongoose.connection;
 
@@ -502,6 +502,26 @@ app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) =
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const student = await Student.findOne({ user: userId }).populate('courses');
+
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        const sessions = await Session.find({
+            'attendance.student': student._id
+        }).populate('courseId attendance.student');
+
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 
 
 // POST request to register a student in a course

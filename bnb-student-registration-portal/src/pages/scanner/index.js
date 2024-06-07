@@ -59,7 +59,7 @@ const QRCodeScanner = () => {
                     ref={readerRef}
                     onScan={handleScan}
                     onError={handleError}
-                    style={{ width: 300, height: 300 }}
+                    style={{ width: 700, height: 700 }}
                     facingMode={'environment'}
                     reactivate
                 />
