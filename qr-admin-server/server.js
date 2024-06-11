@@ -594,6 +594,39 @@ io.on('connection', (socket) => {
 });
 
 
+//-----------------------------------------------------------------------------------------------
+
+// Function to create a default admin user
+async function createDefaultAdmin() {
+    try {
+        // Check if an admin user already exists
+        const existingAdmin = await User.findOne({ username: '053-16-0029' });
+        if (existingAdmin) {
+            console.log('An admin user already exists.');
+            return;
+        }
+
+        // Create a new admin user
+        const defaultAdmin = new User({
+            username: '053-16-0029',
+            password: '123456', // hash the password
+            role: 'admin',
+            first_name: 'Admin',
+            last_name: 'User'
+        });
+
+        // Save the new admin user to the database
+        await defaultAdmin.save();
+        console.log('Default admin user created successfully.');
+    } catch (error) {
+        console.error('Error creating default admin user:', error);
+    }
+}
+
+// Create the default admin user
+createDefaultAdmin();
+
+
 // Start server
 
 server.listen(PORT, () => {
