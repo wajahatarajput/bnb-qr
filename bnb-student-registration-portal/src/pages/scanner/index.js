@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { QrReader } from 'react-qr-reader';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './QRCodeScanner.css'; // Import your custom CSS file
 
 const QRCodeScanner = () => {
     const [scannedData, setScannedData] = useState('');
-    // const [facingMode, setFacingMode] = useState('environment');
     const [isCameraAvailable, setIsCameraAvailable] = useState(true);
     const readerRef = useRef(null);
 
@@ -28,7 +29,9 @@ const QRCodeScanner = () => {
     }, []);
 
     const handleScan = (data) => {
-        setScannedData(data);
+        if (data) {
+            setScannedData(data);
+        }
     };
 
     const handleError = (error) => {
@@ -36,38 +39,42 @@ const QRCodeScanner = () => {
         setIsCameraAvailable(false);
     };
 
-    // const switchCamera = () => {
-    //     setFacingMode((prevFacingMode) =>
-    //         prevFacingMode === 'user' ? 'environment' : 'user'
-    //     );
-    // };
-
     useImperativeHandle(readerRef, () => ({
-        // Expose a function to trigger a scan externally if needed
         triggerScan: () => {
             readerRef.current.handleImage(null);
         },
     }));
 
     return (
-        <div>
-            <h1> QR Scanner </h1>
-            {isCameraAvailable ? (
-                <QrReader
-                    key="environment"
-                    constraints={{ facingMode: 'environment' }}
-                    ref={readerRef}
-                    onScan={handleScan}
-                    onError={handleError}
-                    style={{ width: 700, height: 700 }}
-                    facingMode={'environment'}
-                    reactivate
-                />
-            ) : (
-                <p>Camera not available. Please check your permissions or try another device.</p>
-            )}
-            {/* <button onClick={switchCamera}>Switch Camera</button> */}
-            {scannedData && <p>Scanned Data: {scannedData}</p>}
+        <div className="container mt-5">
+            <div className="row justify-content-center">
+                <div className="col-md-8 text-center">
+                    <h1 className="mb-4">QR Scanner</h1>
+                    {isCameraAvailable ? (
+                        <div className="qr-reader-wrapper">
+                            <QrReader
+                                key="environment"
+                                constraints={{ facingMode: 'environment' }}
+                                ref={readerRef}
+                                onScan={handleScan}
+                                onError={handleError}
+                                style={{ width: '100%' }}
+                                facingMode={'environment'}
+                                reactivate
+                            />
+                        </div>
+                    ) : (
+                        <div className="alert alert-danger" role="alert">
+                            Camera not available. Please check your permissions or try another device.
+                        </div>
+                    )}
+                    {scannedData && (
+                        <div className="alert alert-success mt-3" role="alert">
+                            Scanned Data: {scannedData}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
