@@ -1,16 +1,35 @@
 const express = require('express');
-const mongoose = require('mongoose'); //
-const bodyParser = require('body-parser'); // request json handle
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const { User, Student, Teacher, Course, Session } = require('./schemas');
 const { jwtMiddleware } = require('./middleware');
 const socketIO = require('socket.io');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 
-// Connect to MongoDB
+const PORT = process.env.PORT || 5000;
+
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'BNB QR Attendance Management System with Geolocation API',
+            version: '1.0.0',
+            description: 'BNB QR Attendance Management System with Geolocation API covered Create, Read, Update, and Delete operations using a Node.js API',
+        },
+        servers: [
+            { url: `http://localhost:${PORT}/api` },
+        ],
+    },
+    apis: ['./server.js'], // Adjust this path if your routes are in different files
+};
+
+const specs = swaggerJsdoc(swaggerOptions);
+
 mongoose.connect('mongodb://localhost:27017/bnb_attendance_system', { useNewUrlParser: true, useUnifiedTopology: true, family: 4 });
-// mongodb://localhost:27017
 const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -21,16 +40,125 @@ db.once('open', function () {
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO with the HTTP server instance
-// const io = require('socket.io')(server);
-
-
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(bodyParser.json());
 app.use(cors());
 
-// REST APIs
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - username
+ *         - password
+ *         - role
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the user
+ *         username:
+ *           type: string
+ *         password:
+ *           type: string
+ *         role:
+ *           type: string
+ *           enum: [admin, student, teacher]
+ *         first_name:
+ *           type: string
+ *         last_name:
+ *           type: string
+ *     Student:
+ *       type: object
+ *       required:
+ *         - user
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the student
+ *         user:
+ *           type: string
+ *         courses:
+ *           type: array
+ *           items:
+ *             type: string
+ *     Teacher:
+ *       type: object
+ *       required:
+ *         - user
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the teacher
+ *         user:
+ *           type: string
+ *         courses:
+ *           type: array
+ *           items:
+ *             type: string
+ *     Course:
+ *       type: object
+ *       required:
+ *         - course_code
+ *         - course_name
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the course
+ *         course_code:
+ *           type: string
+ *         course_name:
+ *           type: string
+ *         students:
+ *           type: array
+ *           items:
+ *             type: string
+ *     Session:
+ *       type: object
+ *       required:
+ *         - geoLocation
+ *         - courseId
+ *         - roomNumber
+ *         - teacher
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the session
+ *         geoLocation:
+ *           type: string
+ *         courseId:
+ *           type: string
+ *         roomNumber:
+ *           type: string
+ *         teacher:
+ *           type: string
+ */
 
-// Create user //admin
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       500:
+ *         description: Internal Server Error
+ */
 app.post('/api/users', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
@@ -38,76 +166,214 @@ app.post('/api/users', jwtMiddleware, async (req, res) => {
         res.status(201).send(user);
     } catch (error) {
         console.error(error);
-        res.status(200).send({ message: "Internal Server Error" });
+        res.status(500).send({ message: "Internal Server Error" });
     }
 });
 
-// Get users
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       500:
+ *         description: Internal Server Error
+ */
 app.get('/api/users', jwtMiddleware, async (req, res) => {
     try {
         const users = await User.find();
-
         res.status(200).send(users);
     } catch (error) {
         console.error(error);
-        res.status(200).send({ message: "Internal Server Error" });
+        res.status(500).send({ message: "Internal Server Error" });
     }
 });
 
-// Get user by ID
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal Server Error
+ */
 app.get('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const user = await User.findById(id);
 
         if (!user) {
-            return res.status(200).send({ message: 'User not found' });
+            return res.status(404).send({ message: 'User not found' });
         }
 
         res.status(200).send(user);
     } catch (error) {
         console.error(error);
-        res.status(200).send({ message: "Internal Server Error" });
+        res.status(500).send({ message: "Internal Server Error" });
     }
 });
 
-// Update user by ID
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Update a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal Server Error
+ */
 app.put('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-
         const user = await User.findByIdAndUpdate(id, updates, { new: true });
 
         if (!user) {
-            return res.status(200).send({ message: 'User not found' });
+            return res.status(404).send({ message: 'User not found' });
         }
 
         res.status(200).send(user);
     } catch (error) {
         console.error(error);
-        res.status(200).send({ message: "Internal Server Error" });
+        res.status(500).send({ message: "Internal Server Error" });
     }
 });
 
-// Delete user by ID
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal Server Error
+ */
 app.delete('/api/users/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const user = await User.findByIdAndDelete(id);
 
         if (!user) {
-            return res.status(200).send({ message: 'User not found' });
+            return res.status(404).send({ message: 'User not found' });
         }
 
         res.status(200).send({ message: 'User deleted successfully' });
     } catch (error) {
         console.error(error);
-        res.status(200).send({ message: "Internal Server Error" });
+        res.status(500).send({ message: "Internal Server Error" });
     }
 });
 
-// Login user
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     summary: Login a user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 id:
+ *                   type: string
+ *                 username:
+ *                   type: string
+ *       401:
+ *         description: Invalid username or password or unauthorized access
+ *       500:
+ *         description: Server Error
+ */
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password, role } = req.body;
@@ -123,21 +389,66 @@ app.post('/api/login', async (req, res) => {
         res.status(200).json({ token, id: user?._id, username: user.username });
     } catch (error) {
         console.error(error);
-        res.status(200).json({ message: "Server Error" });
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
-// Get students
+/**
+ * @swagger
+ * /api/students:
+ *   get:
+ *     summary: Get all students
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of students
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Student'
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/students', jwtMiddleware, async (req, res) => {
     try {
         const students = await Student.find().populate('user');
         res.status(200).send(students);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Get student by ID
+/**
+ * @swagger
+ * /api/students/{id}:
+ *   get:
+ *     summary: Get a student by ID
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The student ID
+ *     responses:
+ *       200:
+ *         description: Student retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Student'
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -146,15 +457,38 @@ app.get('/api/students/:id', jwtMiddleware, async (req, res) => {
         const student = await Student.findById(id).populate('user');
 
         if (!student) {
-            return res.status(200).send({ message: 'Student not found' });
+            return res.status(404).send({ message: 'Student not found' });
         }
         res.send(student);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Create student
+/**
+ * @swagger
+ * /api/students:
+ *   post:
+ *     summary: Create a new student
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Student'
+ *     responses:
+ *       201:
+ *         description: Student created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Student'
+ *       500:
+ *         description: Server Error
+ */
 app.post('/api/students', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
@@ -167,11 +501,43 @@ app.post('/api/students', jwtMiddleware, async (req, res) => {
         await student.save();
         res.status(201).send(student);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Update student by ID
+/**
+ * @swagger
+ * /api/students/{id}:
+ *   put:
+ *     summary: Update a student by ID
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The student ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Student'
+ *     responses:
+ *       200:
+ *         description: Student updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Student'
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server Error
+ */
 app.put('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -193,16 +559,45 @@ app.put('/api/students/:id', jwtMiddleware, async (req, res) => {
         const updatedStudent = await Student.findByIdAndUpdate(id, updates, options);
 
         if (!updatedStudent) {
-            return res.status(200).send({ message: 'Student not found' });
+            return res.status(404).send({ message: 'Student not found' });
         }
 
         res.send(updatedStudent);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Delete student by ID
+/**
+ * @swagger
+ * /api/students/{id}:
+ *   delete:
+ *     summary: Delete a student by ID
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The student ID
+ *     responses:
+ *       200:
+ *         description: Student deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server Error
+ */
 app.delete('/api/students/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -211,7 +606,7 @@ app.delete('/api/students/:id', jwtMiddleware, async (req, res) => {
         const student = await Student.findByIdAndDelete(id)
 
         if (!student) {
-            return res.status(200).send({ message: 'Student not found' });
+            return res.status(404).send({ message: 'Student not found' });
         }
 
         console.log(student)
@@ -220,26 +615,71 @@ app.delete('/api/students/:id', jwtMiddleware, async (req, res) => {
         const user = await User.findOneAndDelete(student.user);
 
         if (!user) {
-            return res.status(200).send({ message: 'User not found' });
+            return res.status(404).send({ message: 'User not found' });
         }
 
         res.send({ message: 'Student and associated user deleted successfully' });
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Get teachers
+/**
+ * @swagger
+ * /api/teachers:
+ *   get:
+ *     summary: Get all teachers
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of teachers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Teacher'
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/teachers', jwtMiddleware, async (req, res) => {
     try {
         const teachers = await Teacher.find().populate('user');
         res.status(200).send(teachers);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Get teacher by ID
+/**
+ * @swagger
+ * /api/teachers/{id}:
+ *   get:
+ *     summary: Get a teacher by ID
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The teacher ID
+ *     responses:
+ *       200:
+ *         description: Teacher retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Teacher'
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -248,15 +688,38 @@ app.get('/api/teachers/:id', jwtMiddleware, async (req, res) => {
         const teacher = await Teacher.findById(id).populate('user');
 
         if (!teacher) {
-            return res.status(200).send({ message: 'Teacher not found' });
+            return res.status(404).send({ message: 'Teacher not found' });
         }
         res.send(teacher);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Create teacher
+/**
+ * @swagger
+ * /api/teachers:
+ *   post:
+ *     summary: Create a new teacher
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Teacher'
+ *     responses:
+ *       201:
+ *         description: Teacher created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Teacher'
+ *       500:
+ *         description: Server Error
+ */
 app.post('/api/teachers', jwtMiddleware, async (req, res) => {
     try {
         const user = new User(req.body);
@@ -269,11 +732,42 @@ app.post('/api/teachers', jwtMiddleware, async (req, res) => {
         await teacher.save();
         res.status(201).send(teacher);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Create course
+/**
+ * @swagger
+ * /api/teachers/courses:
+ *   post:
+ *     summary: Get All courses of a teacher
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: The user ID of the teacher
+ *     responses:
+ *       201:
+ *         description: Courses retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server Error
+ */
 app.post('/api/teachers/courses', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.body;
@@ -282,16 +776,48 @@ app.post('/api/teachers/courses', jwtMiddleware, async (req, res) => {
         const teacher = await Teacher.findOne({ user: id }).populate('courses');
 
         if (!teacher) {
-            return { success: false, message: 'Teacher not found' };
+            return res.status(404).send({ success: false, message: 'Teacher not found' });
         }
         const courses = teacher.courses;
         res.status(201).send(courses);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Update teacher by ID
+/**
+ * @swagger
+ * /api/teachers/{id}:
+ *   put:
+ *     summary: Update a teacher by ID
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The teacher ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Teacher'
+ *     responses:
+ *       200:
+ *         description: Teacher updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Teacher'
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server Error
+ */
 app.put('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -313,16 +839,45 @@ app.put('/api/teachers/:id', jwtMiddleware, async (req, res) => {
         const updatedTeacher = await Teacher.findByIdAndUpdate(id, updates, options);
 
         if (!updatedTeacher) {
-            return res.status(200).send({ message: 'Teacher not found' });
+            return res.status(404).send({ message: 'Teacher not found' });
         }
 
         res.send(updatedTeacher);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Delete teacher by ID
+/**
+ * @swagger
+ * /api/teachers/{id}:
+ *   delete:
+ *     summary: Delete a teacher by ID
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The teacher ID
+ *     responses:
+ *       200:
+ *         description: Teacher and associated user deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server Error
+ */
 app.delete('/api/teachers/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -331,71 +886,170 @@ app.delete('/api/teachers/:id', jwtMiddleware, async (req, res) => {
         const teacher = await Teacher.findByIdAndDelete(id)
 
         if (!teacher) {
-            return res.status(200).send({ message: 'Teacher not found' });
+            return res.status(404).send({ message: 'Teacher not found' });
         }
 
         // Find the user associated with the teacher
         const user = await User.findOneAndDelete(teacher.user);
 
         if (!user) {
-            return res.status(200).send({ message: 'User not found' });
+            return res.status(404).send({ message: 'User not found' });
         }
 
         res.send({ message: 'Teacher and associated user deleted successfully' });
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Get courses
+/**
+ * @swagger
+ * /api/courses:
+ *   get:
+ *     summary: Get all courses
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/courses', jwtMiddleware, async (req, res) => {
     try {
         const courses = await Course.find();
         res.status(200).send(courses);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Get course by ID
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   get:
+ *     summary: Get a course by ID
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The course ID or course code
+ *     responses:
+ *       200:
+ *         description: Course retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server Error
+ */
 app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
-    // try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    // Find the course
-    const course = await Course.findOne({ course_code: id }).populate('students');
+        // Find the course
+        const course = await Course.findOne({ course_code: id }).populate('students');
 
-    if (!course) {
-        return res.status(404).send({ message: 'Course not found' });
+        if (!course) {
+            return res.status(404).send({ message: 'Course not found' });
+        }
+
+        // Extract student IDs
+        const studentIds = course.students.map(student => student._id);
+
+        // Find students
+        const students = await Student.find({ _id: { $in: studentIds } }).populate('user');
+
+        course.students = students;
+
+        res.send(course);
+    } catch (error) {
+        res.status(500).send(error);
     }
-
-    // Extract student IDs
-    const studentIds = course.students.map(student => student._id);
-
-    // Find students
-    const students = await Student.find({ _id: { $in: studentIds } }).populate('user');
-
-    course.students = students;
-
-
-    res.send(course);
-    // } catch (error) {
-    //     res.status(200).send(error);
-    // }
 });
 
-// Create course
+/**
+ * @swagger
+ * /api/courses:
+ *   post:
+ *     summary: Create a new course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Course'
+ *     responses:
+ *       201:
+ *         description: Course created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       500:
+ *         description: Server Error
+ */
 app.post('/api/courses', jwtMiddleware, async (req, res) => {
     try {
         const course = new Course(req.body);
         await course.save();
         res.status(201).send(course);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Update course by ID
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   put:
+ *     summary: Update a course by ID
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The course ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Course'
+ *     responses:
+ *       200:
+ *         description: Course updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server Error
+ */
 app.put('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -406,16 +1060,45 @@ app.put('/api/courses/:id', jwtMiddleware, async (req, res) => {
         const updatedCourse = await Course.findByIdAndUpdate(id, updates, options);
 
         if (!updatedCourse) {
-            return res.status(200).send({ message: 'Course not found' });
+            return res.status(404).send({ message: 'Course not found' });
         }
 
         res.send(updatedCourse);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
 
-// Delete course by ID
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   delete:
+ *     summary: Delete a course by ID
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The course ID
+ *     responses:
+ *       200:
+ *         description: Course deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server Error
+ */
 app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -424,14 +1107,57 @@ app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
         const course = await Course.findByIdAndDelete(id);
 
         if (!course) {
-            return res.status(200).send({ message: 'Course not found' });
+            return res.status(404).send({ message: 'Course not found' });
         }
 
         res.send({ message: 'Course deleted successfully' });
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
+
+
+
+/**
+ * @swagger
+ * /api/sessions:
+ *   post:
+ *     summary: Create a new session
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               geoLocation:
+ *                 type: string
+ *               courseId:
+ *                 type: string
+ *               roomNumber:
+ *                 type: string
+ *               teacher:
+ *                 type: string
+ *             example:
+ *               geoLocation: "Location 1"
+ *               courseId: "CSE101"
+ *               roomNumber: "Room A"
+ *               teacher: "teacher_id_here"
+ *     responses:
+ *       201:
+ *         description: Session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Course or Teacher not found
+ *       500:
+ *         description: Server Error
+ */
 
 // Create session
 app.post('/api/sessions', jwtMiddleware, async (req, res) => {
@@ -475,6 +1201,51 @@ app.post('/api/sessions', jwtMiddleware, async (req, res) => {
 
 // ----------------------------------------------------
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Courses
+ *   description: Course management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/assigncourse/{teacherId}/{courseId}:
+ *   post:
+ *     summary: Assign a course to a teacher
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the teacher
+ *       - in: path
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *     responses:
+ *       200:
+ *         description: Course assigned to teacher successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Teacher or Course not found
+ *       500:
+ *         description: Server Error
+ */
+
 // POST route to assign a course to a teacher
 app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) => {
     const { teacherId, courseId } = req.params;
@@ -503,6 +1274,39 @@ app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) =
     }
 });
 
+
+
+/**
+ * @swagger
+ * /api/attendance-history/{userId}:
+ *   get:
+ *     summary: Get attendance history for a student
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the user/student
+ *     responses:
+ *       200:
+ *         description: List of sessions with attendance details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server Error
+ */
+
+
 app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
     try {
         const { userId } = req.params;
@@ -522,6 +1326,46 @@ app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
     }
 });
 
+
+
+/**
+ * @swagger
+ * /api/registercourse/{userId}/{course_code}:
+ *   post:
+ *     summary: Register a student in a course
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the user/student
+ *       - in: path
+ *         name: course_code
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The course code
+ *     responses:
+ *       200:
+ *         description: Student registered in the course successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Student is already enrolled in the course
+ *       404:
+ *         description: Student or Course not found
+ *       500:
+ *         description: Server Error
+ */
 
 
 // POST request to register a student in a course
@@ -561,7 +1405,7 @@ app.post('/registercourse/:userId/:course_code', jwtMiddleware, async (req, res)
     }
 });
 
-const PORT = process.env.PORT || 5000;
+
 const io = socketIO(server, {
     cors: {
         origin: "*",  // Replace with the origin of your client app
@@ -627,8 +1471,9 @@ async function createDefaultAdmin() {
 createDefaultAdmin();
 
 
-// Start server
+
 
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
+    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
