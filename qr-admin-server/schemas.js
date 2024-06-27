@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-
 // Define schema for student
 const studentSchema = new mongoose.Schema({
     user: { // works as foreign key
@@ -38,25 +37,21 @@ const studentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }], // Array of courses a student is enrolled in
-
     joiningDate: {
         type: Date,
         required: true,
         default: Date.now
     },
-
     leavingDate: {
         type: Date,
         default: null
     },
-
     status: {
         type: String,
         enum: ['active', 'left', 'pass_out'],
         default: 'active'
     }
 });
-
 
 // Define schema for teacher
 const teacherSchema = new mongoose.Schema({
@@ -66,21 +61,18 @@ const teacherSchema = new mongoose.Schema({
         required: true
     },
     courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }], // Array of courses a teacher is teaching
-
     joiningDate: {
         type: Date,
         required: true,
         default: Date.now
     },
-
     leavingDate: {
         type: Date,
         default: null
     },
-
     status: {
         type: String,
-        enum: ['active', 'left', 'pass_out'],
+        enum: ['active', 'left', 'retired'],
         default: 'active'
     }
 });
@@ -104,6 +96,24 @@ const courseSchema = new mongoose.Schema({
     sessions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Session' }] // Array of sessions associated with the course
 });
 
+// Define schema for attendance
+const attendanceSchema = new mongoose.Schema({
+    session: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Session',
+        required: true
+    },
+    student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Student',
+        required: true
+    },
+    isPresent: {
+        type: Boolean,
+        default: false
+    }
+});
+
 // Define schema for session
 const sessionSchema = new mongoose.Schema({
     teacher: {
@@ -111,7 +121,7 @@ const sessionSchema = new mongoose.Schema({
         ref: 'Teacher',
         required: true
     },
-    courseId: {
+    course: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course',
         required: true
@@ -120,19 +130,9 @@ const sessionSchema = new mongoose.Schema({
         type: [String], // Array of geolocation
         required: true
     },
-    attendance: [{
-        student: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Student'
-        },
-        isPresent: {
-            type: Boolean,
-            default: false
-        }
-    }],
     sessionTime: {
         type: Date, // Assuming session time is a Date object
-        default: Date.now(),
+        default: Date.now,
         required: true
     },
     roomNumber: {
@@ -141,12 +141,12 @@ const sessionSchema = new mongoose.Schema({
     }
 });
 
-
 // Create models based on the schemas
 const User = mongoose.model('User', userSchema);
 const Student = mongoose.model('Student', studentSchema);
 const Teacher = mongoose.model('Teacher', teacherSchema);
 const Course = mongoose.model('Course', courseSchema);
+const Attendance = mongoose.model('Attendance', attendanceSchema);
 const Session = mongoose.model('Session', sessionSchema);
 
 module.exports = {
@@ -154,5 +154,6 @@ module.exports = {
     Student,
     Teacher,
     Course,
+    Attendance,
     Session
 };

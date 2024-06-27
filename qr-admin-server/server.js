@@ -43,7 +43,6 @@ const server = http.createServer(app);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(bodyParser.json());
 app.use(cors());
-
 /**
  * @swagger
  * components:
@@ -118,7 +117,7 @@ app.use(cors());
  *       type: object
  *       required:
  *         - geoLocation
- *         - courseId
+ *         - course
  *         - roomNumber
  *         - teacher
  *       properties:
@@ -127,13 +126,47 @@ app.use(cors());
  *           description: The auto-generated id of the session
  *         geoLocation:
  *           type: string
- *         courseId:
+ *         course:
  *           type: string
+ *           description: Reference to the course (Course ID)
  *         roomNumber:
  *           type: string
  *         teacher:
  *           type: string
+ *           description: Reference to the teacher (Teacher ID)
+ *         startTime:
+ *           type: string
+ *           format: date-time
+ *           description: The start time of the session
+ *         endTime:
+ *           type: string
+ *           format: date-time
+ *           description: The end time of the session
+ *     Attendance:
+ *       type: object
+ *       required:
+ *         - session
+ *         - student
+ *         - isPresent
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the attendance record
+ *         session:
+ *           type: string
+ *           description: Reference to the session (Session ID)
+ *         student:
+ *           type: string
+ *           description: Reference to the student (Student ID)
+ *         isPresent:
+ *           type: boolean
+ *           description: Indicates if the student was present
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *           description: The time the attendance was recorded
  */
+
 
 /**
  * @swagger
@@ -1116,8 +1149,6 @@ app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
     }
 });
 
-
-
 /**
  * @swagger
  * /api/sessions:
@@ -1133,8 +1164,10 @@ app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               geoLocation:
- *                 type: string
+ *               geoLocations:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               courseId:
  *                 type: string
  *               roomNumber:
@@ -1142,7 +1175,7 @@ app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
  *               teacher:
  *                 type: string
  *             example:
- *               geoLocation: "Location 1"
+ *               geoLocations: ["Location 1"]
  *               courseId: "CSE101"
  *               roomNumber: "Room A"
  *               teacher: "teacher_id_here"
@@ -1159,44 +1192,602 @@ app.delete('/api/courses/:id', jwtMiddleware, async (req, res) => {
  *         description: Server Error
  */
 
-// Create session
 app.post('/api/sessions', jwtMiddleware, async (req, res) => {
     try {
-        const { geoLocation, courseId, roomNumber, teacher } = req.body;
+        const { geoLocations, courseId, roomNumber, teacher } = req.body;
 
         const course = await Course.findOne({ course_code: courseId });
 
-        // If the course is not found
         if (!course) {
             return res.status(404).json({ message: "Course not found" });
         }
-        // Find the teacher by teacher ID associated with the course
+
         const teachers = await Teacher.findOne({ user: teacher });
 
-        // If the teacher is not found
         if (!teachers) {
             return res.status(404).json({ message: "Teacher not found" });
         }
 
         const session = new Session({
-            geoLocation,
-            courseId: course,
+            geoLocations,
+            course: course._id,
             roomNumber,
-            teacher: teachers
+            teacher: teachers._id
         });
         await session.save();
 
-
-        await Course.findByIdAndUpdate(course?._id, {
-            sessions: session
-        });
-
+        course.sessions.push(session._id);
+        await course.save();
 
         res.status(201).send(session);
     } catch (error) {
-        res.status(200).send(error);
+        res.status(500).send(error);
     }
 });
+
+
+/**
+ * @swagger
+ * /api/attendance/session/{sessionId}:
+ *   get:
+ *     summary: Get attendance by session
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     responses:
+ *       200:
+ *         description: Attendance records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Server Error
+ */
+app.get('/api/attendance/session/:sessionId', jwtMiddleware, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        const session = await Session.findById(sessionId);
+
+        if (!session) {
+            return res.status(404).json({ message: "Session not found" });
+        }
+
+        const attendanceRecords = await Attendance.find({ session: sessionId }).populate('student').populate('session');
+
+        res.status(200).send(attendanceRecords);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/attendance:
+ *   post:
+ *     summary: Create an attendance record
+ *     tags: [Attendance]
+ *     security: 
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               studentId:
+ *                 type: string
+ *               isPresent:
+ *                 type: boolean
+ *             example:
+ *               sessionId: "session_id_here"
+ *               studentId: "student_id_here"
+ *               isPresent: true
+ *     responses:
+ *       201:
+ *         description: Attendance record created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Session or Student not found
+ *       500:
+ *         description: Server Error
+ */
+app.post('/api/attendance', jwtMiddleware, async (req, res) => {
+    try {
+        const { sessionId, studentId, isPresent } = req.body;
+
+        const session = await Session.findById(sessionId);
+        const student = await Student.findById(studentId);
+
+        if (!session || !student) {
+            return res.status(404).json({ message: "Session or Student not found" });
+        }
+
+        const attendance = new Attendance({
+            session: sessionId,
+            student: studentId,
+            isPresent
+        });
+        await attendance.save();
+
+        const populatedAttendance = await Attendance.findById(attendance._id).populate('session').populate('student');
+
+        res.status(201).send(populatedAttendance);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/attendance/student/{studentId}:
+ *   get:
+ *     summary: Get attendance by student
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the student
+ *     responses:
+ *       200:
+ *         description: Attendance records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Server Error
+ */
+app.get('/api/attendance/student/:studentId', jwtMiddleware, async (req, res) => {
+    try {
+        const { studentId } = req.params;
+
+        const student = await Student.findById(studentId);
+
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+
+        const attendanceRecords = await Attendance.find({ student: studentId }).populate('student').populate('session');
+
+        res.status(200).send(attendanceRecords);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/sessions/teacher/{teacherId}:
+ *   get:
+ *     summary: Get sessions by teacher
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the teacher
+ *     responses:
+ *       200:
+ *         description: Sessions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Server Error
+ */
+
+app.get('/api/sessions/teacher/:teacherId', jwtMiddleware, async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+
+        const teacher = await Teacher.findById(teacherId);
+
+        if (!teacher) {
+            return res.status(404).json({ message: "Teacher not found" });
+        }
+
+        const sessions = await Session.find({ teacher: teacherId });
+
+        res.status(200).send(sessions);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions:
+ *   get:
+ *     summary: Get all sessions
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sessions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Session'
+ *       500:
+ *         description: Server Error
+ */
+
+app.get('/api/sessions', jwtMiddleware, async (req, res) => {
+    try {
+        const sessions = await Session.find().populate('teacher').populate('course');
+        res.status(200).send(sessions);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   get:
+ *     summary: Get a session by ID
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     responses:
+ *       200:
+ *         description: Session retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Server Error
+ */
+
+app.get('/api/sessions/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const session = await Session.findById(req.params.id).populate('teacher').populate('course');
+        if (!session) {
+            return res.status(404).json({ message: "Session not found" });
+        }
+        res.status(200).send(session);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   put:
+ *     summary: Update a session
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               geoLocations:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               courseId:
+ *                 type: string
+ *               roomNumber:
+ *                 type: string
+ *               teacher:
+ *                 type: string
+ *             example:
+ *               geoLocations: ["Location 2"]
+ *               courseId: "CSE102"
+ *               roomNumber: "Room B"
+ *               teacher: "teacher_id_here"
+ *     responses:
+ *       200:
+ *         description: Session updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Server Error
+ */
+
+app.put('/api/sessions/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const { geoLocations, courseId, roomNumber, teacher } = req.body;
+
+        const course = await Course.findOne({ course_code: courseId });
+        const teachers = await Teacher.findOne({ user: teacher });
+
+        if (!course || !teachers) {
+            return res.status(404).json({ message: "Course or Teacher not found" });
+        }
+
+        const session = await Session.findByIdAndUpdate(
+            req.params.id,
+            { geoLocations, course: course._id, roomNumber, teacher: teachers._id },
+            { new: true }
+        );
+
+        if (!session) {
+            return res.status(404).json({ message: "Session not found" });
+        }
+
+        res.status(200).send(session);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   delete:
+ *     summary: Delete a session
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     responses:
+ *       200:
+ *         description: Session deleted successfully
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Server Error
+ */
+
+app.delete('/api/sessions/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const session = await Session.findByIdAndDelete(req.params.id);
+
+        if (!session) {
+            return res.status(404).json({ message: "Session not found" });
+        }
+
+        await Course.updateMany({ sessions: session._id }, { $pull: { sessions: session._id } });
+
+        res.status(200).json({ message: "Session deleted successfully" });
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/attendance:
+ *   get:
+ *     summary: Get all attendance records
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Attendance records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Attendance'
+ *       500:
+ *         description: Server Error
+ */
+app.get('/api/attendance', jwtMiddleware, async (req, res) => {
+    try {
+        const attendanceRecords = await Attendance.find().populate('student').populate('session');
+        res.status(200).send(attendanceRecords);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/attendance/{id}:
+ *   get:
+ *     summary: Get an attendance record by ID
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the attendance record
+ *     responses:
+ *       200:
+ *         description: Attendance record retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Attendance record not found
+ *       500:
+ *         description: Server Error
+ */
+app.get('/api/attendance/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const attendance = await Attendance.findById(req.params.id).populate('session').populate('student');
+        if (!attendance) {
+            return res.status(404).json({ message: "Attendance record not found" });
+        }
+        res.status(200).send(attendance);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/attendance/{id}:
+ *   put:
+ *     summary: Update an attendance record
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the attendance record
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isPresent:
+ *                 type: boolean
+ *             example:
+ *               isPresent: true
+ *     responses:
+ *       200:
+ *         description: Attendance record updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Attendance record not found
+ *       500:
+ *         description: Server Error
+ */
+app.put('/api/attendance/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const { isPresent } = req.body;
+
+        const attendance = await Attendance.findByIdAndUpdate(
+            req.params.id,
+            { isPresent },
+            { new: true }
+        ).populate('session').populate('student');
+
+        if (!attendance) {
+            return res.status(404).json({ message: "Attendance record not found" });
+        }
+
+        res.status(200).send(attendance);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
+/**
+ * @swagger
+ * /api/attendance/{id}:
+ *   delete:
+ *     summary: Delete an attendance record
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the attendance record
+ *     responses:
+ *       200:
+ *         description: Attendance record deleted successfully
+ *       404:
+ *         description: Attendance record not found
+ *       500:
+ *         description: Server Error
+ */
+app.delete('/api/attendance/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const attendance = await Attendance.findByIdAndDelete(req.params.id);
+
+        if (!attendance) {
+            return res.status(404).json({ message: "Attendance record not found" });
+        }
+
+        res.status(200).json({ message: "Attendance record deleted successfully" });
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+
 
 
 // ----------------------------------------------------
