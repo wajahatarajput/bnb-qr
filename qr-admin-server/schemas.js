@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
     }
 });
 
+
 // Define schema for student
 const studentSchema = new mongoose.Schema({
     user: { // works as foreign key
