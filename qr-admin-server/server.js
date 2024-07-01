@@ -2063,9 +2063,83 @@ async function createDefaultAdmin() {
 createDefaultAdmin();
 
 
+/**
+ * @swagger
+ * /courses:
+ *   get:
+ *     summary: Retrieve a list of courses for a student
+ *     tags: [Courses]
+ *     responses:
+ *       200:
+ *         description: A list of courses.
+ */
+app.get('/studentcourses', async (req, res) => {
+    const studentId = req.query.studentId;
+    const student = await Student.find({user: studentId}).populate('courses');
+    
+    console.log(student)
+    res.json(student?.courses || []);
+});
+
+/**
+ * @swagger
+ * /courses:
+ *   put:
+ *     summary: Update a student's course
+ *     tags: [Courses]
+ *     parameters:
+ *       - name: studentId
+ *         description: ID of the student
+ *         in: query
+ *         required: true
+ *       - name: courseId
+ *         description: ID of the course
+ *         in: query
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Course updated successfully.
+ */
+app.put('/studentcourses', async (req, res) => {
+    const { studentId, courseId } = req.query;
+    const student = await Student.findById(studentId);
+    if (!student.courses.includes(courseId)) {
+        student.courses.push(courseId);
+        await student.save();
+    }
+    res.json(student);
+});
+
+/**
+ * @swagger
+ * /courses:
+ *   delete:
+ *     summary: Unenroll a student from a course
+ *     tags: [Courses]
+ *     parameters:
+ *       - name: studentId
+ *         description: ID of the student
+ *         in: query
+ *         required: true
+ *       - name: courseId
+ *         description: ID of the course
+ *         in: query
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Course unenrolled successfully.
+ */
+app.delete('/studentcourses', async (req, res) => {
+    const { studentId, courseId } = req.query;
+    const student = await Student.findById(studentId);
+    student.courses = student.courses.filter(id => id.toString() !== courseId);
+    await student.save();
+    res.json(student);
+});
 
 
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
     console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
+

@@ -5,6 +5,7 @@ import Login from "./pages/login";
 import Home from "./pages/home";
 import QRCodeScanner from "./pages/scanner";
 import History from "./pages/history";
+import CoursesPage from "./pages/course";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route exact path="/dashboard" element={<ProtectedRoute> <Home /></ProtectedRoute>} />
         <Route exact path="/scanner" element={<ProtectedRoute> <QRCodeScanner /></ProtectedRoute>} />
         <Route exact path="/history" element={<ProtectedRoute> <History /></ProtectedRoute>} />
+        <Route exact path="/courses" element={<ProtectedRoute> <CoursesPage /></ProtectedRoute>} />
 
       </Routes>
     </AuthProvider>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faUsers, faUserGraduate, faBook, faUserCircle, faUserCog, faQrcode, faHistory } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBook, faUserCircle, faQrcode, faHistory } from '@fortawesome/free-solid-svg-icons';
 import './style.css'
 import { useAuth } from '../../providers';
 import { Link } from 'react-router-dom';
@@ -44,6 +44,11 @@ function Dashboard(props) {
                         <li className="nav-item">
                             <Link to={'/history'} className="nav-link">
                                 <FontAwesomeIcon icon={faHistory} />
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to={'/courses'} className="nav-link">
+                                <FontAwesomeIcon icon={faBook} />
                             </Link>
                         </li>
                     </ul>
