@@ -2075,8 +2075,8 @@ createDefaultAdmin();
  */
 app.get('/studentcourses', async (req, res) => {
     const studentId = req.query.studentId;
-    const student = await Student.find({user: studentId}).populate('courses');
-    
+    const student = await Student.find({ user: studentId }).populate('courses');
+
     console.log(student)
     res.json(student?.courses || []);
 });
@@ -2102,7 +2102,9 @@ app.get('/studentcourses', async (req, res) => {
  */
 app.put('/studentcourses', async (req, res) => {
     const { studentId, courseId } = req.query;
-    const student = await Student.findById(studentId);
+    const student = await Student.find(
+        { user: studentId }
+    );
     if (!student.courses.includes(courseId)) {
         student.courses.push(courseId);
         await student.save();
@@ -2131,7 +2133,7 @@ app.put('/studentcourses', async (req, res) => {
  */
 app.delete('/studentcourses', async (req, res) => {
     const { studentId, courseId } = req.query;
-    const student = await Student.findById(studentId);
+    const student = await Student.find({ user: studentId });
     student.courses = student.courses.filter(id => id.toString() !== courseId);
     await student.save();
     res.json(student);
