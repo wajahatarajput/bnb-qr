@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './QRCodeScanner.css'; // Import your custom CSS file
+import io from 'socket.io-client';
+import { SERVER_URL } from '../../config';
+import { toast } from 'react-toastify';
+
+const socket = io(SERVER_URL); // Assuming your server is running on localhost:3001
 
 const QRCodeScanner = () => {
     const [scannedData, setScannedData] = useState('');
@@ -24,6 +29,29 @@ const QRCodeScanner = () => {
                         },
                         (decodedText, decodedResult) => {
                             // Handle on success condition with the decoded text or result.
+                            const {
+                                sessionId,
+                                sessioLocation,
+                            } = decodedResult;
+
+
+                            window.navigator.geolocation.getCurrentPosition((pos) => {
+                                const { latitude, longitude } = pos.coords;
+                                const { sLatitude, sLongitude } = sessioLocation;
+
+                                if (latitude === sLatitude && longitude === sLongitude) {
+                                    // student will be marked
+                                    socket.emit('markAttendance', { studentId: localStorage.getItem('id'), sessionId, isPresent: true });
+                                }
+                            })
+
+
+                            socket.on('attendanceMarked', ({ studentId, status }) => {
+                                if (status && studentId === localStorage.getItem('id'))
+                                    toast.success('Attendance Marked SuccessFul!')
+                                else
+                                    toast.error('Attendance Unsuccessful!')
+                            });
                             setScannedData(decodedText);
                             alert(decodedText);
                             setError(null); // Clear any previous errors

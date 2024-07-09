@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }) => {
                 cookies.set("username", res.data.username);
                 localStorage.setItem("authToken", res.data.token); // Assuming you store token in localStorage
                 cookies.set("id", res.data.id);
+                localStorage.setItem("id", res.data.id);
                 navigate("/dashboard");
             } else {
                 toast.error('Invalid Credentials')

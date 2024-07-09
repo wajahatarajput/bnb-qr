@@ -62,7 +62,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
-        socket.on('attendanceUpdated', ({ studentId, status }) => {
+        socket.on('attendanceMarked', ({ studentId, status }) => {
 
             console.log(status)
             if (status)
@@ -73,7 +73,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
         // Clean up the socket event listener when component unmounts
         return () => {
-            socket.off('attendanceUpdated');
+            socket.off('attendanceMarked');
         };
     }, []);
 
@@ -98,7 +98,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const handleToggle = useCallback(async (studentId, session) => {
         try {
             // Emit socket event to mark attendance
-            socket.emit('markAttendance', { studentId, session, isPresent: !attendance.includes(studentId) });
+            socket.emit('markAttendance', { studentId: studentId, sessionId: session, isPresent: !attendance.includes(studentId) });
 
         } catch (error) {
             console.error('Error marking attendance:', error);

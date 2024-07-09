@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const { User, Student, Teacher, Course, Session } = require('./schemas');
+const { User, Student, Teacher, Course, Session, Attendance } = require('./schemas');
 const { jwtMiddleware } = require('./middleware');
 const socketIO = require('socket.io');
 const swaggerUi = require('swagger-ui-express');
@@ -2008,17 +2008,35 @@ const io = socketIO(server, {
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
+
     socket.on('markAttendance', async (data) => {
         try {
-            // Find the session
-            await Session.findByIdAndUpdate(data?.session, {
-                attendance: [{
-                    student: new mongoose.Types.ObjectId(data?.studentId),
-                    isPresent: data?.isPresent
-                }]
-            }).then(() => {
-                io.emit('attendanceUpdated', { studentId: data?.studentId, status: data?.isPresent });
-            })
+            // Destructure data for easier access
+            const { sessionId, studentId, isPresent } = data;
+
+            // Find the session and student
+            const session = await Session.findById(sessionId);
+            const student = await Student.find({ user: studentId });
+
+            if (!session || !student) {
+                throw new Error('Invalid session or student ID');
+            }
+
+            // Find existing attendance or create a new one
+            let attendance = await Attendance.findOne({ session: sessionId, student: student._id });
+
+            if (!attendance) {
+                attendance = new Attendance({ session: sessionId, student: studentId });
+            }
+
+            // Update the attendance status
+            attendance.isPresent = isPresent;
+
+            // Save the attendance
+            await attendance.save();
+
+            // Emit the updated attendance status to all clients
+            io.emit('attendanceMarked', { session: sessionId, student: studentId, status: isPresent });
         } catch (error) {
             console.error('Error marking attendance:', error);
         }
