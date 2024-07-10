@@ -2162,4 +2162,88 @@ server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
     console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
+/**
+ * @swagger
+ * /api/studentcourses/{studentId}:
+ *   get:
+ *     summary: Get courses assigned to a student
+ *     tags: [Student Courses]
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the student
+ *     responses:
+ *       200:
+ *         description: Successful response with courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Student not found
+ *       500:
+ *         description: Internal Server Error
+ */
+app.get('/api/studentcourses/:studentId', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const courses = await Course.find({ students: studentId });
+        res.status(200).json(courses);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/studentattendance/{studentId}/{courseId}:
+ *   get:
+ *     summary: Get attendance history of a student for a specific course
+ *     tags: [Student Attendance]
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the student
+ *       - in: path
+ *         name: courseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the course
+ *     responses:
+ *       200:
+ *         description: Successful response with attendance records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Attendance'
+ *       404:
+ *         description: Student or course not found
+ *       500:
+ *         description: Internal Server Error
+ */
+app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
+    try {
+        const { studentId, courseId } = req.params;
+        const attendance = await Attendance.find({ student: studentId }).populate({
+            path: 'session',
+            match: { course: courseId },
+        });
+        res.status(200).json(attendance);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 
