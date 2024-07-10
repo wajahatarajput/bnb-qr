@@ -17,6 +17,8 @@ import ManageAdmins from "./pages/admin/manage";
 import AddAdminPage from "./pages/admin/add";
 import EditAdminPage from "./pages/admin/edit";
 import AssignCourse from "./pages/course/assign";
+import CourseList from "./pages/overallhistory/CourseList";
+import CourseHistory from "./pages/overallhistory/CourseHistory";
 
 function App() {
   return (
@@ -48,6 +50,10 @@ function App() {
         <Route exact path="/addteacher" element={<ProtectedRoute> <AddTeacherPage /> </ProtectedRoute>} />
         <Route exact path="/editteacher/:id" element={<ProtectedRoute><EditTeacherPage /></ProtectedRoute>} />
 
+        {/* New Routes pages you just created */}
+        <Route exact path="/courselist" element={<ProtectedRoute> <CourseList /></ProtectedRoute>} />
+        <Route exact path="/course-history/:id" element={<ProtectedRoute> <CourseHistory /></ProtectedRoute>} />
+      
       </Routes>
     </AuthProvider>
   );

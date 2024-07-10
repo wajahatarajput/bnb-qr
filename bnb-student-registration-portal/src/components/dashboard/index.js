@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faBook, faUserCircle, faQrcode, faHistory } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBook, faUserCircle, faQrcode, faHistory, faUserClock } from '@fortawesome/free-solid-svg-icons';
 import './style.css'
 import { useAuth } from '../../providers';
 import { Link } from 'react-router-dom';

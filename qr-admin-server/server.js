@@ -2247,3 +2247,132 @@ app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/courses:
+ *   get:
+ *     summary: Get all courses with the number of students, number of sessions, and attendance average
+ *     responses:
+ *       200:
+ *         description: A list of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   department:
+ *                     type: string
+ *                   totalStudents:
+ *                     type: integer
+ *                   totalSessions:
+ *                     type: integer
+ *                   attendanceAverage:
+ *                     type: number
+ *                     format: float
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/courses', async (req, res) => {
+    try {
+        const courses = await Course.find()
+            .populate('students')
+            .populate('sessions')
+            .exec();
+
+        const courseDetails = await Promise.all(courses.map(async (course) => {
+            const totalSessions = course.sessions.length;
+            const totalStudents = course.students.length;
+            let totalAttendance = 0;
+            let presentCount = 0;
+
+            for (const session of course.sessions) {
+                const attendances = await Attendance.find({ session: session._id }).exec();
+                totalAttendance += attendances.length;
+                presentCount += attendances.filter(a => a.isPresent).length;
+            }
+
+            const attendanceAverage = totalAttendance ? (presentCount / totalAttendance) * 100 : 0;
+
+            return {
+                ...course.toObject(),
+                totalStudents,
+                totalSessions,
+                attendanceAverage
+            };
+        }));
+
+        res.json(courseDetails);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/courses/{id}/history:
+ *   get:
+ *     summary: Get course history by course ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The course ID
+ *     responses:
+ *       200:
+ *         description: A list of sessions for the course
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   sessionTime:
+ *                     type: string
+ *                     format: date-time
+ *                   roomNumber:
+ *                     type: string
+ *                   presentCount:
+ *                     type: integer
+ *                   absentCount:
+ *                     type: integer
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/courses/:id/history', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const course = await Course.findById(id)
+            .populate('sessions')
+            .exec();
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        const sessionDetails = await Promise.all(course.sessions.map(async (session) => {
+            const attendances = await Attendance.find({ session: session._id }).exec();
+            const presentCount = attendances.filter(a => a.isPresent).length;
+            const absentCount = attendances.length - presentCount;
+
+            return {
+                ...session.toObject(),
+                presentCount,
+                absentCount
+            };
+        }));
+
+        res.json(sessionDetails);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
