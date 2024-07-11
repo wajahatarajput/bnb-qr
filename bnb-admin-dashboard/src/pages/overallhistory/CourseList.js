@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Doughnut } from 'react-chartjs-2';
+import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { server } from '../../helpers';
+
+// Register Chart.js components
+Chart.register(ArcElement, Tooltip, Legend);
 
 function CourseList() {
     const [courses, setCourses] = useState([]);
@@ -31,36 +35,38 @@ function CourseList() {
     return (
         <div className="container mt-5">
             <h1 className="mb-4">Admin Panel - Courses</h1>
-            <table className="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Number of Students</th>
-                        <th>Number of Sessions</th>
-                        <th>Attendance Average (%)</th>
-                        <th>Graph</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {courses.length > 0 && courses.map(course => (
-                        <tr key={course._id}>
-                            <td>{course.name}</td>
-                            <td>{course.department}</td>
-                            <td>{course.totalStudents}</td>
-                            <td>{course.totalSessions}</td>
-                            <td>{course?.attendanceAverage?.toFixed(2)}</td>
-                            <td>
-                                <Doughnut data={getChartData(course)} />
-                            </td>
-                            <td>
-                                <Link to={`/course-history/${course._id}`} className="btn btn-primary">View History</Link>
-                            </td>
+            <div className="table-responsive">
+                <table className="table table-striped text-center">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Number of Students</th>
+                            <th>Number of Sessions</th>
+                            <th>Attendance Average (%)</th>
+                            <th>Graph</th>
+                            <th>Action</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {courses.length > 0 && courses.map(course => (
+                            <tr key={course._id}>
+                                <td>{course.name}</td>
+                                <td>{course.department}</td>
+                                <td>{course.totalStudents || 0}</td>
+                                <td>{course.totalSessions || 0}</td>
+                                <td>{course?.attendanceAverage?.toFixed(2) || 0}</td>
+                                <td>
+                                    <Doughnut data={getChartData(course)} />
+                                </td>
+                                <td>
+                                    <Link to={`/course-history/${course._id}`} className="btn btn-dark rounded-pill">History</Link>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

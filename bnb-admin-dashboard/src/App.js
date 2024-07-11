@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./providers";
 import ProtectedRoute from "./ProtectedRoute";
-import { SignUp } from "./pages/signup";
+// import { SignUp } from "./pages/signup";
 import Login from "./pages/login";
 import ManageStudents from "./pages/student/manage";
 import AddStudentPage from "./pages/student/add";
@@ -25,7 +25,6 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route exact path="/" element={<Login />} />
-        <Route exact path="/signup" element={<SignUp />} />
         <Route exact path="/dashboard" element={<ProtectedRoute> <Home /></ProtectedRoute>} />
 
         {/* -------------------------------------------------------------------------------------------------- */}
@@ -53,7 +52,7 @@ function App() {
         {/* New Routes pages you just created */}
         <Route exact path="/courselist" element={<ProtectedRoute> <CourseList /></ProtectedRoute>} />
         <Route exact path="/course-history/:id" element={<ProtectedRoute> <CourseHistory /></ProtectedRoute>} />
-      
+
       </Routes>
     </AuthProvider>
   );

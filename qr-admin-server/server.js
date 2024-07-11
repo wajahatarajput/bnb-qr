@@ -2091,7 +2091,7 @@ createDefaultAdmin();
  *       200:
  *         description: A list of courses.
  */
-app.get('/studentcourses', async (req, res) => {
+app.get('/studentcourses', jwtMiddleware, async (req, res) => {
     const studentId = req.query.studentId;
     const student = await Student.find({ user: studentId }).populate('courses');
 
@@ -2118,7 +2118,7 @@ app.get('/studentcourses', async (req, res) => {
  *       200:
  *         description: Course updated successfully.
  */
-app.put('/studentcourses', async (req, res) => {
+app.put('/studentcourses', jwtMiddleware, async (req, res) => {
     const { studentId, courseId } = req.query;
     const student = await Student.find(
         { user: studentId }
@@ -2149,7 +2149,7 @@ app.put('/studentcourses', async (req, res) => {
  *       200:
  *         description: Course unenrolled successfully.
  */
-app.delete('/studentcourses', async (req, res) => {
+app.delete('/studentcourses', jwtMiddleware, async (req, res) => {
     const { studentId, courseId } = req.query;
     const student = await Student.find({ user: studentId });
     student.courses = student.courses.filter(id => id.toString() !== courseId);
@@ -2158,10 +2158,7 @@ app.delete('/studentcourses', async (req, res) => {
 });
 
 
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
-});
+
 /**
  * @swagger
  * /api/studentcourses/{studentId}:
@@ -2189,7 +2186,7 @@ server.listen(PORT, () => {
  *       500:
  *         description: Internal Server Error
  */
-app.get('/api/studentcourses/:studentId', async (req, res) => {
+app.get('/api/studentcourses/:studentId', jwtMiddleware, async (req, res) => {
     try {
         const { studentId } = req.params;
         const courses = await Course.find({ students: studentId });
@@ -2233,7 +2230,7 @@ app.get('/api/studentcourses/:studentId', async (req, res) => {
  *       500:
  *         description: Internal Server Error
  */
-app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
+app.get('/api/studentattendance/:studentId/:courseId', jwtMiddleware, async (req, res) => {
     try {
         const { studentId, courseId } = req.params;
         const attendance = await Attendance.find({ student: studentId }).populate({
@@ -2276,7 +2273,7 @@ app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
  *       500:
  *         description: Server error
  */
-app.get('/api/courses', async (req, res) => {
+app.get('/api/courses', jwtMiddleware, async (req, res) => {
     try {
         const courses = await Course.find()
             .populate('students')
@@ -2347,7 +2344,7 @@ app.get('/api/courses', async (req, res) => {
  *       500:
  *         description: Server error
  */
-app.get('/api/courses/:id/history', async (req, res) => {
+app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const course = await Course.findById(id)
@@ -2376,3 +2373,9 @@ app.get('/api/courses/:id/history', async (req, res) => {
     }
 });
 
+
+
+server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
+});

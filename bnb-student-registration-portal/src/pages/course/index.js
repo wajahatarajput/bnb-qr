@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../providers/AuthProvider';
 import { SERVER_URL } from '../../config';
+import { server } from '../../helpers';
 
 const StudentCourseHistoryPage = () => {
     const [attendance, setAttendance] = useState([]);
@@ -12,7 +12,7 @@ const StudentCourseHistoryPage = () => {
     useEffect(() => {
         const fetchCourses = async () => {
             const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-            const response = await axios.get(`${SERVER_URL}/studentcourses?studentId=${studentId}`);
+            const response = await server.get(`${SERVER_URL}/studentcourses?studentId=${studentId}`);
             setCourses(response.data);
         };
         fetchCourses();
@@ -22,7 +22,7 @@ const StudentCourseHistoryPage = () => {
         const fetchAttendance = async () => {
             if (selectedCourse) {
                 const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-                const response = await axios.get(`${SERVER_URL}/studentattendance?studentId=${studentId}&courseId=${selectedCourse}`);
+                const response = await server.get(`${SERVER_URL}/studentattendance?studentId=${studentId}&courseId=${selectedCourse}`);
                 setAttendance(response.data);
             }
         };
