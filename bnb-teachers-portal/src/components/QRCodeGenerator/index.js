@@ -62,9 +62,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
-        socket.on('attendanceMarked', ({ studentId, status }) => {
-
-            console.log(status)
+        socket.on('attendanceMarked', ({ studentId, sessionId, status }) => {
             if (status)
                 setAttendance(old => [...old, studentId])
             else
@@ -128,11 +126,24 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     // Determine the QR code size based on the device
     const qrCodeSize = isMobileDevice() ? 300 : 500;
 
+    const handleFinishSession = async () => {
+        try {
+            if (session) {
+                await server.post(`/markAbsent/${session}`);
+                alert('Session finished and absences marked.');
+            } else {
+                alert('No session active.');
+            }
+        } catch (error) {
+            console.error('Error finishing session:', error);
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
 
             <div className='d-flex justify-content-end w-100 my-5'>
-                <button className='btn btn-secondary rounded'> Finish Session</button>
+                <button className='btn btn-secondary rounded' onClick={handleFinishSession}>Finish Session</button>
             </div>
             {session && courseData ?
                 <>

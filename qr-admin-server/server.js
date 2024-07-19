@@ -1420,13 +1420,13 @@ app.get('/api/sessions/teacher/:teacherId', jwtMiddleware, async (req, res) => {
     try {
         const { teacherId } = req.params;
 
-        const teacher = await Teacher.findById(teacherId);
+        const teacher = await Teacher.find({ user: teacherId });
 
         if (!teacher) {
             return res.status(404).json({ message: "Teacher not found" });
         }
 
-        const sessions = await Session.find({ teacher: teacherId });
+        const sessions = await Session.find({ teacher: teacher?._id });
 
         res.status(200).send(sessions);
     } catch (error) {
@@ -2372,6 +2372,137 @@ app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
+
+/**
+ * @swagger
+ * /finishSession/{sessionId}:
+ *   post:
+ *     summary: Mark absent students for a session
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     responses:
+ *       200:
+ *         description: Successfully marked absent students
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Internal server error
+ */
+app.post('/finishSession/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        // Find the session by ID
+        const session = await Session.findById(sessionId).populate('course');
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        // Get the course associated with the session
+        const course = session.course;
+
+        // Get the list of students registered in the course
+        const registeredStudents = await Student.find({ courses: course._id });
+
+        // Get the attendance records for the session
+        const attendanceRecords = await Attendance.find({ session: sessionId });
+
+        // Create a set of student IDs who are present
+        const presentStudentIds = new Set(attendanceRecords.map(record => record.student.toString()));
+
+        // Iterate through registered students and mark those not present as absent
+        const bulkOperations = registeredStudents.map(student => {
+            if (!presentStudentIds.has(student._id.toString())) {
+                return {
+                    updateOne: {
+                        filter: { session: sessionId, student: student._id },
+                        update: { isPresent: false },
+                        upsert: true, // Create the record if it doesn't exist
+                    },
+                };
+            }
+            return null;
+        }).filter(op => op !== null);
+
+        if (bulkOperations.length > 0) {
+            await Attendance.bulkWrite(bulkOperations);
+        }
+
+        res.status(200).json({ message: 'Successfully marked absent students' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+/**
+ * @swagger
+ * /updateAttendance:
+ *   put:
+ *     summary: Update attendance for a session
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 description: The ID of the session
+ *               attendance:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     studentId:
+ *                       type: string
+ *                     isPresent:
+ *                       type: boolean
+ *     responses:
+ *       200:
+ *         description: Successfully updated attendance
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Internal server error
+ */
+app.put('/updateAttendance', async (req, res) => {
+    try {
+        const { sessionId, attendance } = req.body;
+
+        // Find the session by ID
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        // Process attendance updates
+        const bulkOperations = attendance.map(record => ({
+            updateOne: {
+                filter: { session: sessionId, student: record.studentId },
+                update: { isPresent: record.isPresent },
+                upsert: true,
+            },
+        }));
+
+        if (bulkOperations.length > 0) {
+            await Attendance.bulkWrite(bulkOperations);
+        }
+
+        res.status(200).json({ message: 'Successfully updated attendance' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 
 
 
