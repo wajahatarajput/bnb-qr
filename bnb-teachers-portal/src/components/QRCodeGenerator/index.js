@@ -4,6 +4,8 @@ import { server } from '../../helpers';
 import { useAuth } from '../../providers';
 import io from 'socket.io-client';
 import { SERVER_URL } from '../../config';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const socket = io(SERVER_URL); // Assuming your server is running on localhost:3001
 
@@ -14,6 +16,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [session, setSession] = useState('');
     const [courseData, setCourseData] = useState(undefined);
     const [attendance, setAttendance] = useState([]);
+    const navigate = useNavigate();
 
     const { cookies } = useAuth();
 
@@ -130,12 +133,13 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         try {
             if (session) {
                 await server.post(`/finishSession/${session}`);
-                alert('Session finished and absences marked.');
+                navigate('/class')
+                toast.success('Session finished and absences marked.');
             } else {
-                alert('No session active.');
+                toast.error('No session active.');
             }
         } catch (error) {
-            console.error('Error finishing session:', error);
+            toast.error('Error finishing session:', error);
         }
     };
 
