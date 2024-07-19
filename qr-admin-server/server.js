@@ -22,7 +22,7 @@ const swaggerOptions = {
             description: 'BNB QR Attendance Management System with Geolocation API covered Create, Read, Update, and Delete operations using a Node.js API',
         },
         servers: [
-            { url: `http://localhost:${PORT}/api` },
+            { url: `http://localhost:${PORT}/` },
         ],
     },
     apis: ['./server.js'], // Adjust this path if your routes are in different files
@@ -802,12 +802,12 @@ app.post('/api/teachers', jwtMiddleware, async (req, res) => {
  *       500:
  *         description: Server Error
  */
-app.post('/api/teachers/courses', jwtMiddleware, async (req, res) => {
+app.post('/api/teachers/courses', async (req, res) => {
     try {
         const { id } = req.body;
-
         // Find the teacher based on the user ID and populate the courses field
         const teacher = await Teacher.findOne({ user: id }).populate('courses');
+
 
         if (!teacher) {
             return res.status(404).send({ success: false, message: 'Teacher not found' });
@@ -2503,6 +2503,12 @@ app.put('/updateAttendance', async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
