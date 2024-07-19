@@ -131,6 +131,9 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
 
+            <div className='d-flex justify-content-end w-100 my-5'>
+                <button className='btn btn-secondary rounded'> Finish Session</button>
+            </div>
             {session && courseData ?
                 <>
                     <h3> SESSION ID : {session}</h3>
