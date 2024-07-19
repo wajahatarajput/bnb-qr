@@ -129,7 +129,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const handleFinishSession = async () => {
         try {
             if (session) {
-                await server.post(`/markAbsent/${session}`);
+                await server.post(`/finishSession/${session}`);
                 alert('Session finished and absences marked.');
             } else {
                 alert('No session active.');
