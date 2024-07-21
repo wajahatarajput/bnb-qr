@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./providers";
 import ProtectedRoute from "./ProtectedRoute";
-import { SignUp } from "./pages/signup";
+// import { SignUp } from "./pages/signup";
 import Login from "./pages/login";
 import ManageStudents from "./pages/student/manage";
 import AddStudentPage from "./pages/student/add";
@@ -17,13 +17,14 @@ import ManageAdmins from "./pages/admin/manage";
 import AddAdminPage from "./pages/admin/add";
 import EditAdminPage from "./pages/admin/edit";
 import AssignCourse from "./pages/course/assign";
+import CourseList from "./pages/overallhistory/CourseList";
+import CourseHistory from "./pages/overallhistory/CourseHistory";
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route exact path="/" element={<Login />} />
-        <Route exact path="/signup" element={<SignUp />} />
         <Route exact path="/dashboard" element={<ProtectedRoute> <Home /></ProtectedRoute>} />
 
         {/* -------------------------------------------------------------------------------------------------- */}
@@ -47,6 +48,10 @@ function App() {
         <Route exact path="/manageteachers" element={<ProtectedRoute> <ManageTeachers /> </ProtectedRoute>} />
         <Route exact path="/addteacher" element={<ProtectedRoute> <AddTeacherPage /> </ProtectedRoute>} />
         <Route exact path="/editteacher/:id" element={<ProtectedRoute><EditTeacherPage /></ProtectedRoute>} />
+
+        {/* New Routes pages you just created */}
+        <Route exact path="/courselist" element={<ProtectedRoute> <CourseList /></ProtectedRoute>} />
+        <Route exact path="/course-history/:id" element={<ProtectedRoute> <CourseHistory /></ProtectedRoute>} />
 
       </Routes>
     </AuthProvider>

@@ -4,6 +4,8 @@ import { server } from '../../helpers';
 import { useAuth } from '../../providers';
 import io from 'socket.io-client';
 import { SERVER_URL } from '../../config';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const socket = io(SERVER_URL); // Assuming your server is running on localhost:3001
 
@@ -14,6 +16,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [session, setSession] = useState('');
     const [courseData, setCourseData] = useState(undefined);
     const [attendance, setAttendance] = useState([]);
+    const navigate = useNavigate();
 
     const { cookies } = useAuth();
 
@@ -62,9 +65,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
-        socket.on('attendanceMarked', ({ studentId, status }) => {
-
-            console.log(status)
+        socket.on('attendanceMarked', ({ studentId, sessionId, status }) => {
             if (status)
                 setAttendance(old => [...old, studentId])
             else
@@ -128,9 +129,26 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     // Determine the QR code size based on the device
     const qrCodeSize = isMobileDevice() ? 300 : 500;
 
+    const handleFinishSession = async () => {
+        try {
+            if (session) {
+                await server.post(`/finishSession/${session}`);
+                navigate('/class')
+                toast.success('Session finished and absences marked.');
+            } else {
+                toast.error('No session active.');
+            }
+        } catch (error) {
+            toast.error('Error finishing session:', error);
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
 
+            <div className='d-flex justify-content-end w-100 my-5'>
+                <button className='btn btn-secondary rounded' onClick={handleFinishSession}>Finish Session</button>
+            </div>
             {session && courseData ?
                 <>
                     <h3> SESSION ID : {session}</h3>

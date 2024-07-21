@@ -22,7 +22,7 @@ const swaggerOptions = {
             description: 'BNB QR Attendance Management System with Geolocation API covered Create, Read, Update, and Delete operations using a Node.js API',
         },
         servers: [
-            { url: `http://localhost:${PORT}/api` },
+            { url: `http://localhost:${PORT}/` },
         ],
     },
     apis: ['./server.js'], // Adjust this path if your routes are in different files
@@ -802,12 +802,12 @@ app.post('/api/teachers', jwtMiddleware, async (req, res) => {
  *       500:
  *         description: Server Error
  */
-app.post('/api/teachers/courses', jwtMiddleware, async (req, res) => {
+app.post('/api/teachers/courses', async (req, res) => {
     try {
         const { id } = req.body;
-
         // Find the teacher based on the user ID and populate the courses field
         const teacher = await Teacher.findOne({ user: id }).populate('courses');
+
 
         if (!teacher) {
             return res.status(404).send({ success: false, message: 'Teacher not found' });
@@ -1420,13 +1420,13 @@ app.get('/api/sessions/teacher/:teacherId', jwtMiddleware, async (req, res) => {
     try {
         const { teacherId } = req.params;
 
-        const teacher = await Teacher.findById(teacherId);
+        const teacher = await Teacher.find({ user: teacherId });
 
         if (!teacher) {
             return res.status(404).json({ message: "Teacher not found" });
         }
 
-        const sessions = await Session.find({ teacher: teacherId });
+        const sessions = await Session.find({ teacher: teacher?._id });
 
         res.status(200).send(sessions);
     } catch (error) {
@@ -2091,7 +2091,7 @@ createDefaultAdmin();
  *       200:
  *         description: A list of courses.
  */
-app.get('/studentcourses', async (req, res) => {
+app.get('/studentcourses', jwtMiddleware, async (req, res) => {
     const studentId = req.query.studentId;
     const student = await Student.find({ user: studentId }).populate('courses');
 
@@ -2118,7 +2118,7 @@ app.get('/studentcourses', async (req, res) => {
  *       200:
  *         description: Course updated successfully.
  */
-app.put('/studentcourses', async (req, res) => {
+app.put('/studentcourses', jwtMiddleware, async (req, res) => {
     const { studentId, courseId } = req.query;
     const student = await Student.find(
         { user: studentId }
@@ -2149,7 +2149,7 @@ app.put('/studentcourses', async (req, res) => {
  *       200:
  *         description: Course unenrolled successfully.
  */
-app.delete('/studentcourses', async (req, res) => {
+app.delete('/studentcourses', jwtMiddleware, async (req, res) => {
     const { studentId, courseId } = req.query;
     const student = await Student.find({ user: studentId });
     student.courses = student.courses.filter(id => id.toString() !== courseId);
@@ -2158,10 +2158,7 @@ app.delete('/studentcourses', async (req, res) => {
 });
 
 
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
-});
+
 /**
  * @swagger
  * /api/studentcourses/{studentId}:
@@ -2189,7 +2186,7 @@ server.listen(PORT, () => {
  *       500:
  *         description: Internal Server Error
  */
-app.get('/api/studentcourses/:studentId', async (req, res) => {
+app.get('/api/studentcourses/:studentId', jwtMiddleware, async (req, res) => {
     try {
         const { studentId } = req.params;
         const courses = await Course.find({ students: studentId });
@@ -2233,7 +2230,7 @@ app.get('/api/studentcourses/:studentId', async (req, res) => {
  *       500:
  *         description: Internal Server Error
  */
-app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
+app.get('/api/studentattendance/:studentId/:courseId', jwtMiddleware, async (req, res) => {
     try {
         const { studentId, courseId } = req.params;
         const attendance = await Attendance.find({ student: studentId }).populate({
@@ -2287,3 +2284,275 @@ app.get('/api/teachercourses/:teacherId', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/courses:
+ *   get:
+ *     summary: Get all courses with the number of students, number of sessions, and attendance average
+ *     responses:
+ *       200:
+ *         description: A list of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   department:
+ *                     type: string
+ *                   totalStudents:
+ *                     type: integer
+ *                   totalSessions:
+ *                     type: integer
+ *                   attendanceAverage:
+ *                     type: number
+ *                     format: float
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/courses', jwtMiddleware, async (req, res) => {
+    try {
+        const courses = await Course.find()
+            .populate('students')
+            .populate('sessions')
+            .exec();
+
+        const courseDetails = await Promise.all(courses.map(async (course) => {
+            const totalSessions = course.sessions.length;
+            const totalStudents = course.students.length;
+            let totalAttendance = 0;
+            let presentCount = 0;
+
+            for (const session of course.sessions) {
+                const attendances = await Attendance.find({ session: session._id }).exec();
+                totalAttendance += attendances.length;
+                presentCount += attendances.filter(a => a.isPresent).length;
+            }
+
+            const attendanceAverage = totalAttendance ? (presentCount / totalAttendance) * 100 : 0;
+
+            return {
+                ...course.toObject(),
+                totalStudents,
+                totalSessions,
+                attendanceAverage
+            };
+        }));
+
+        res.json(courseDetails);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/courses/{id}/history:
+ *   get:
+ *     summary: Get course history by course ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The course ID
+ *     responses:
+ *       200:
+ *         description: A list of sessions for the course
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   sessionTime:
+ *                     type: string
+ *                     format: date-time
+ *                   roomNumber:
+ *                     type: string
+ *                   presentCount:
+ *                     type: integer
+ *                   absentCount:
+ *                     type: integer
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const course = await Course.findById(id)
+            .populate('sessions')
+            .exec();
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        const sessionDetails = await Promise.all(course.sessions.map(async (session) => {
+            const attendances = await Attendance.find({ session: session._id }).exec();
+            const presentCount = attendances.filter(a => a.isPresent).length;
+            const absentCount = attendances.length - presentCount;
+
+            return {
+                ...session.toObject(),
+                presentCount,
+                absentCount
+            };
+        }));
+
+        res.json(sessionDetails);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+
+/**
+ * @swagger
+ * /finishSession/{sessionId}:
+ *   post:
+ *     summary: Mark absent students for a session
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the session
+ *     responses:
+ *       200:
+ *         description: Successfully marked absent students
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Internal server error
+ */
+app.post('/finishSession/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        // Find the session by ID
+        const session = await Session.findById(sessionId).populate('course');
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        // Get the course associated with the session
+        const course = session.course;
+
+        // Get the list of students registered in the course
+        const registeredStudents = await Student.find({ courses: course._id });
+
+        // Get the attendance records for the session
+        const attendanceRecords = await Attendance.find({ session: sessionId });
+
+        // Create a set of student IDs who are present
+        const presentStudentIds = new Set(attendanceRecords.map(record => record.student.toString()));
+
+        // Iterate through registered students and mark those not present as absent
+        const bulkOperations = registeredStudents.map(student => {
+            if (!presentStudentIds.has(student._id.toString())) {
+                return {
+                    updateOne: {
+                        filter: { session: sessionId, student: student._id },
+                        update: { isPresent: false },
+                        upsert: true, // Create the record if it doesn't exist
+                    },
+                };
+            }
+            return null;
+        }).filter(op => op !== null);
+
+        if (bulkOperations.length > 0) {
+            await Attendance.bulkWrite(bulkOperations);
+        }
+
+        res.status(200).json({ message: 'Successfully marked absent students' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+/**
+ * @swagger
+ * /updateAttendance:
+ *   put:
+ *     summary: Update attendance for a session
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 description: The ID of the session
+ *               attendance:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     studentId:
+ *                       type: string
+ *                     isPresent:
+ *                       type: boolean
+ *     responses:
+ *       200:
+ *         description: Successfully updated attendance
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Internal server error
+ */
+app.put('/updateAttendance', async (req, res) => {
+    try {
+        const { sessionId, attendance } = req.body;
+
+        // Find the session by ID
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found' });
+        }
+
+        // Process attendance updates
+        const bulkOperations = attendance.map(record => ({
+            updateOne: {
+                filter: { session: sessionId, student: record.studentId },
+                update: { isPresent: record.isPresent },
+                upsert: true,
+            },
+        }));
+
+        if (bulkOperations.length > 0) {
+            await Attendance.bulkWrite(bulkOperations);
+        }
+
+        res.status(200).json({ message: 'Successfully updated attendance' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+    console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
+});

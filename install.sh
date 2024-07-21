@@ -8,7 +8,7 @@ install_dependencies() {
   local project_dir="$1"
   echo "Installing dependencies for $project_dir..."
   cd "$project_dir" || return
-  npm install
+  npm install --legacy-peer-deps
   cd ..
 }
 

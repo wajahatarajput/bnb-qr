@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/bnb.svg'
 import { useAuth } from '../../providers';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Login = (props) => {
     const { type } = props;
@@ -87,7 +87,6 @@ const Login = (props) => {
                                 Login
                             </button>
                         </form>
-                        <Link className='btn btn-secondary mt-3 w-100' to={'/signup'}> Register </Link>
                     </div>
                 </div>
             </div>
