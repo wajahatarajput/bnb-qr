@@ -2246,4 +2246,44 @@ app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+/**
+ * @swagger
+ * /api/teachercourses/{teacherId}:
+ *   get:
+ *     summary: Get courses assigned to a teacher
+ *     tags: [Teacher Courses]
+ *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the teacher
+ *     responses:
+ *       200:
+ *         description: Successful response with courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Teacher not found
+ *       500:
+ *         description: Internal Server Error
+ */
+app.get('/api/teachercourses/:teacherId', async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const teacher = await Teacher.find({user:teacherId}).populate('courses');
+        if (!teacher) {
+            return res.status(404).json({ message: 'Teacher not found' });
+        }
+        res.status(200).json(teacher.courses);
+    } catch (error) {
+        console.error('Error fetching teacher courses:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 

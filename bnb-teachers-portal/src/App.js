@@ -6,8 +6,10 @@ import Home from "./pages/home";
 import QRForm from "./pages/class";
 import QRPage from "./pages/attandance";
 import CourseDetailsPage from "./pages/courses";
+import TeacherCourses from "./pages/courses/TeacherCourses"; // Ensure correct path
 
 function App() {
+
   return (
     <AuthProvider>
       <Routes>
@@ -15,7 +17,7 @@ function App() {
         <Route exact path="/class" element={<ProtectedRoute> <QRForm /></ProtectedRoute>} />
         <Route exact path="/qr-page" element={<ProtectedRoute> <QRPage /></ProtectedRoute>} />
         <Route exact path="/courses" element={<ProtectedRoute> <CourseDetailsPage /></ProtectedRoute>} />
-
+        <Route exact path="/teacher-courses" element={<ProtectedRoute> <TeacherCourses /></ProtectedRoute>} />
       </Routes>
     </AuthProvider>
   );
