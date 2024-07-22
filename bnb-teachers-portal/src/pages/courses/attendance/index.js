@@ -38,6 +38,22 @@ const AttendanceRecords = () => {
         }
     };
 
+    const toggleAttendance = async (studentId) => {
+        setAttendanceRecords(prevRecords =>
+            prevRecords.map(record =>
+                record.student === studentId
+                    ? { ...record, isPresent: !record.isPresent }
+                    : record
+            )
+        );
+
+        try {
+            await server.put(`/api/attendance/toggle`, { sessionId, studentId });
+        } catch (error) {
+            console.error('Error toggling attendance:', error);
+        }
+    };
+
     return (
         <div className="container mt-5">
             <h2 className="mb-4">Attendance Records</h2>
@@ -57,7 +73,16 @@ const AttendanceRecords = () => {
                             {attendanceRecords.map((record, index) => (
                                 <tr key={index}>
                                     <td>{record.student}</td>
-                                    <td>{record.isPresent ? 'Yes' : 'No'}</td>
+                                    <td>
+                                        <div className="form-check form-switch">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={record.isPresent}
+                                                onChange={() => toggleAttendance(record.student)}
+                                            />
+                                        </div>
+                                    </td>
                                     <td>{new Date(record.timestamp).toLocaleString()}</td>
                                 </tr>
                             ))}

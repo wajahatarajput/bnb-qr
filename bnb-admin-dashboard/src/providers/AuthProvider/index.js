@@ -22,20 +22,25 @@ export const AuthProvider = ({ children }) => {
     // Function to handle login
     const login = async (params) => {
         // Logic to perform login
-        await server.post('/api/login', params).then((res) => {
-            if (res.data.token) {
-                toast.success('Login Successfully')
-                setIsAuthenticated(true);
-                cookies.set("authToken", res.data.token);
-                cookies.set("username", res.data.username);
-                localStorage.setItem("authToken", res.data.token); // Assuming you store token in localStorage
-                cookies.set("id", res.data.id);
+        try {
+            await server.post('/api/login', params).then((res) => {
 
-                navigate("/dashboard");
-            } else {
-                toast.error('Invalid Credentials')
-            }
-        })
+                if (res.data.token) {
+                    toast.success('Login Successfully')
+                    setIsAuthenticated(true);
+                    cookies.set("authToken", res.data.token);
+                    cookies.set("username", res.data.username);
+                    localStorage.setItem("authToken", res.data.token); // Assuming you store token in localStorage
+                    cookies.set("id", res.data.id);
+
+                    navigate("/dashboard");
+                } else {
+                    toast.error('Invalid Credentials')
+                }
+            })
+        } catch (error) {
+            toast.error('Invalid Credentials')
+        }
     };
 
     // Function to handle logout

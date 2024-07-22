@@ -2586,7 +2586,62 @@ app.put('/updateAttendance', async (req, res) => {
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+/**
+ * @swagger
+ * /api/attendance/toggle:
+ *   put:
+ *     summary: Toggle the attendance status of a student for a session
+ *     tags: [Attendance]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 description: The ID of the session
+ *                 example: 60d21b4667d0d8992e610c85
+ *               studentId:
+ *                 type: string
+ *                 description: The ID of the student
+ *                 example: 60d21b4967d0d8992e610c86
+ *     responses:
+ *       200:
+ *         description: Attendance status successfully toggled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 session:
+ *                   type: string
+ *                 student:
+ *                   type: string
+ *                 isPresent:
+ *                   type: boolean
+ *       404:
+ *         description: Attendance record not found
+ *       500:
+ *         description: Internal server error
+ */
+app.put('/api/attendance/toggle', async (req, res) => {
+    const { sessionId, studentId } = req.body;
+    try {
+        const attendance = await Attendance.findOne({ session: sessionId, student: studentId });
+        if (!attendance) return res.status(404).send();
 
+        attendance.isPresent = !attendance.isPresent;
+        await attendance.save();
+
+        res.send(attendance);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
