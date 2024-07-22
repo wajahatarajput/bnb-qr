@@ -2589,7 +2589,7 @@ app.put('/updateAttendance', async (req, res) => {
 
 /**
  * @swagger
- * /api/attendance/toggle:
+ * /api/attendance/modify/:sessionId/:studentId
  *   put:
  *     summary: Toggle the attendance status of a student for a session
  *     tags: [Attendance]
@@ -2629,7 +2629,7 @@ app.put('/updateAttendance', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-
+// changed this api endpoint /api/attendace/toggle to /api/attendance/modify/:sessionId/:studentId where sessionId and studentId are parameters for api
 app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
     const { sessionId, studentId } = req.params;
 
