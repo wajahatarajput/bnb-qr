@@ -48,7 +48,7 @@ const AttendanceRecords = () => {
         );
 
         try {
-            await server.put(`/api/attendance/toggle`, { sessionId, studentId });
+            await server.put(`/api/attendance/modify/${sessionId}/${studentId}`);
         } catch (error) {
             console.error('Error toggling attendance:', error);
         }

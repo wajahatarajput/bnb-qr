@@ -2586,6 +2586,7 @@ app.put('/updateAttendance', async (req, res) => {
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
+
 /**
  * @swagger
  * /api/attendance/toggle:
@@ -2628,20 +2629,33 @@ app.put('/updateAttendance', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-app.put('/api/attendance/toggle', async (req, res) => {
-    const { sessionId, studentId } = req.body;
+
+app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
+    const { sessionId, studentId } = req.params;
+
+    // Log the input parameters
+    console.log(`Received sessionId: ${sessionId}, studentId: ${studentId}`);
+
     try {
-        const attendance = await Attendance.findOne({ session: sessionId, student: studentId });
-        if (!attendance) return res.status(404).send();
+        const attendance = await Attendance.findOne({
+            session: new mongoose.Types.ObjectId(sessionId),
+            student: new mongoose.Types.ObjectId(studentId)
+        });
+
+        if (!attendance) {
+            return res.status(404).send({ message: 'Attendance record not found' });
+        }
 
         attendance.isPresent = !attendance.isPresent;
         await attendance.save();
 
         res.send(attendance);
     } catch (error) {
-        res.status(500).send(error);
+        console.error('Error toggling attendance:', error);
+        res.status(500).send({ message: 'Internal server error', error });
     }
 });
+
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
