@@ -1226,53 +1226,78 @@ app.post('/api/sessions', jwtMiddleware, async (req, res) => {
     }
 });
 
-
 /**
  * @swagger
  * /api/attendance/session/{sessionId}:
  *   get:
- *     summary: Get attendance by session
- *     tags: [Attendance]
- *     security:
- *       - bearerAuth: []
+ *     summary: Get attendance records by session ID with pagination
  *     parameters:
  *       - in: path
  *         name: sessionId
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: The ID of the session
+ *         description: The session ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number (starting from 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of records per page
  *     responses:
  *       200:
- *         description: Attendance records retrieved successfully
+ *         description: A list of attendance records for the session
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Attendance'
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   session:
+ *                     type: string
+ *                   student:
+ *                     type: string
+ *                   isPresent:
+ *                     type: boolean
+ *                   timestamp:
+ *                     type: string
+ *                     format: date-time
  *       404:
  *         description: Session not found
  *       500:
- *         description: Server Error
+ *         description: Server error
  */
 app.get('/api/attendance/session/:sessionId', jwtMiddleware, async (req, res) => {
     try {
         const { sessionId } = req.params;
+        const { page = 1, limit = 10 } = req.query;
 
-        const session = await Session.findById(sessionId);
+        const session = await Session.findById(sessionId).exec();
 
         if (!session) {
-            return res.status(404).json({ message: "Session not found" });
+            return res.status(404).json({ message: 'Session not found' });
         }
 
-        const attendanceRecords = await Attendance.find({ session: sessionId }).populate('student').populate('session');
+        const totalRecords = await Attendance.countDocuments({ session: sessionId });
+        const attendanceRecords = await Attendance.find({ session: sessionId })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .exec();
+        const hasMore = (page * limit) < totalRecords;
 
-        res.status(200).send(attendanceRecords);
-    } catch (error) {
-        res.status(500).send(error);
+        res.json({ attendanceRecords, hasMore });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
+
 
 
 /**
@@ -2273,7 +2298,7 @@ app.get('/api/studentattendance/:studentId/:courseId', jwtMiddleware, async (req
 app.get('/api/teachercourses/:teacherId', async (req, res) => {
     try {
         const { teacherId } = req.params;
-        const teacher = await Teacher.find({user:teacherId}).populate('courses');
+        const teacher = await Teacher.find({ user: teacherId }).populate('courses');
         if (!teacher) {
             return res.status(404).json({ message: 'Teacher not found' });
         }
@@ -2352,7 +2377,7 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
  * @swagger
  * /api/courses/{id}/history:
  *   get:
- *     summary: Get course history by course ID
+ *     summary: Get course history by course ID with pagination
  *     parameters:
  *       - in: path
  *         name: id
@@ -2360,6 +2385,16 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
  *         schema:
  *           type: string
  *         description: The course ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number (starting from 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of records per page
  *     responses:
  *       200:
  *         description: A list of sessions for the course
@@ -2387,15 +2422,19 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
 app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const course = await Course.findById(id)
-            .populate('sessions')
-            .exec();
+        const { page = 1, limit = 10 } = req.query;
+
+        const course = await Course.findById(id).populate('sessions').exec();
 
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        const sessionDetails = await Promise.all(course.sessions.map(async (session) => {
+        const totalSessions = course.sessions.length;
+        const sessions = course.sessions.slice((page - 1) * limit, page * limit);
+        const hasMore = (page * limit) < totalSessions;
+
+        const sessionDetails = await Promise.all(sessions.map(async (session) => {
             const attendances = await Attendance.find({ session: session._id }).exec();
             const presentCount = attendances.filter(a => a.isPresent).length;
             const absentCount = attendances.length - presentCount;
@@ -2407,11 +2446,12 @@ app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
             };
         }));
 
-        res.json(sessionDetails);
+        res.json({ sessionDetails, hasMore });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 
 /**

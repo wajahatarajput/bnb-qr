@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { server } from '../../helpers'; // Assuming you have a server helper
 import { useAuth } from '../../providers'; // Assuming you have an authentication provider
+import { Link } from 'react-router-dom';
 
 const CourseDetailsPage = () => {
     const [courses, setCourses] = useState([]);
@@ -51,6 +52,7 @@ const CourseDetailsPage = () => {
                         <th>Course Name</th>
                         <th>Department</th>
                         <th>Course Code</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,6 +61,11 @@ const CourseDetailsPage = () => {
                             <td>{course.name}</td>
                             <td>{course.department}</td>
                             <td>{course.course_code}</td>
+                            <td>
+                                <Link to={`/course-sessions/${course._id}`} className="btn btn-dark">
+                                    View Sessions
+                                </Link>
+                            </td>
                         </tr>
                     ))}
                 </tbody>

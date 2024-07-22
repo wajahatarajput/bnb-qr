@@ -2,11 +2,11 @@ import { Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./providers";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "./pages/login";
-import Home from "./pages/home";
 import QRForm from "./pages/class";
 import QRPage from "./pages/attandance";
 import CourseDetailsPage from "./pages/courses";
-import TeacherCourses from "./pages/courses/TeacherCourses"; // Ensure correct path
+import CourseSessions from "./pages/courses/sessions";
+import AttendanceRecords from "./pages/courses/attendance";
 
 function App() {
 
@@ -17,7 +17,12 @@ function App() {
         <Route exact path="/class" element={<ProtectedRoute> <QRForm /></ProtectedRoute>} />
         <Route exact path="/qr-page" element={<ProtectedRoute> <QRPage /></ProtectedRoute>} />
         <Route exact path="/courses" element={<ProtectedRoute> <CourseDetailsPage /></ProtectedRoute>} />
-        <Route exact path="/teacher-courses" element={<ProtectedRoute> <TeacherCourses /></ProtectedRoute>} />
+        <Route exact path="/course-sessions/:courseId" element={<ProtectedRoute><CourseSessions /></ProtectedRoute>} />
+        <Route path="/attendance/session/:sessionId" element={
+          <ProtectedRoute>
+            <AttendanceRecords />
+          </ProtectedRoute>
+        } />
       </Routes>
     </AuthProvider>
   );
