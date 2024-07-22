@@ -7,13 +7,19 @@ const StudentCourseHistoryPage = () => {
     const [attendance, setAttendance] = useState([]);
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState('');
+    const [error, setError] = useState(null);
     const { cookies } = useAuth();
 
     useEffect(() => {
         const fetchCourses = async () => {
-            const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-            const response = await server.get(`${SERVER_URL}/studentcourses?studentId=${studentId}`);
-            setCourses(response.data);
+            try {
+                const studentId = cookies.get('id'); // Replace with actual logged-in student ID
+                const response = await server.get(`${SERVER_URL}/studentcourses?studentId=${studentId}`);
+                setCourses(response.data);
+            } catch (err) {
+                setError('There was an error fetching the courses.');
+                console.error('Error fetching courses:', err);
+            }
         };
         fetchCourses();
     }, [cookies]);
@@ -21,9 +27,14 @@ const StudentCourseHistoryPage = () => {
     useEffect(() => {
         const fetchAttendance = async () => {
             if (selectedCourse) {
-                const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-                const response = await server.get(`${SERVER_URL}/studentattendance?studentId=${studentId}&courseId=${selectedCourse}`);
-                setAttendance(response.data);
+                try {
+                    const studentId = cookies.get('id'); // Replace with actual logged-in student ID
+                    const response = await server.get(`${SERVER_URL}/studentattendance?studentId=${studentId}&courseId=${selectedCourse}`);
+                    setAttendance(response.data);
+                } catch (err) {
+                    setError('There was an error fetching the attendance.');
+                    console.error('Error fetching attendance:', err);
+                }
             }
         };
         fetchAttendance();
@@ -36,6 +47,7 @@ const StudentCourseHistoryPage = () => {
     return (
         <div className="container mt-5">
             <h2 className="mb-4">Course Attendance History</h2>
+            {error && <div className="alert alert-danger" role="alert">{error}</div>}
             <div className="mb-3">
                 <label htmlFor="courseSelect" className="form-label">Select Course</label>
                 <select id="courseSelect" className="form-select" onChange={handleCourseChange}>
