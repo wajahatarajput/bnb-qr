@@ -6,8 +6,6 @@ import Home from "./pages/home";
 import QRCodeScanner from "./pages/scanner";
 import History from "./pages/history";
 import StudentCourseHistoryPage from "./pages/course";
-import CourseList from "../../bnb-admin-dashboard/src/pages/overallhistory/CourseList";
-import CourseHistory from "../../bnb-admin-dashboard/src/pages/overallhistory/CourseHistory";
 
 function App() {
   return (
@@ -19,7 +17,7 @@ function App() {
         <Route exact path="/history" element={<ProtectedRoute> <History /></ProtectedRoute>} />
         <Route exact path="/courses" element={<ProtectedRoute> <StudentCourseHistoryPage /></ProtectedRoute>} />
 
-     </Routes>
+      </Routes>
     </AuthProvider>
   );
 }
