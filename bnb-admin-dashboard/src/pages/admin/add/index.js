@@ -6,17 +6,23 @@ const AddAdminPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await server.post('/api/users', {
-            username: e.target[0].value,
-            password: e.target[1].value,
-            first_name: e.target[2].value,
-            last_name: e.target[3].value,
-            role: 'admin'
-        }).then((res) => {
-            if (res.status === 201) {
+        try {
+            const response = await server.post('/api/users', {
+                username: e.target[0].value,
+                password: e.target[1].value,
+                first_name: e.target[2].value,
+                last_name: e.target[3].value,
+                role: 'admin'
+            });
+
+            if (response.status === 201) {
                 toast.success("Added Admin successfully!");
+            } else {
+                toast.error("Failed to add admin. Please try again.");
             }
-        })
+        } catch (error) {
+            toast.error(`Error: ${error.response?.data?.message || error.message}`);
+        }
     }, []);
 
     return (

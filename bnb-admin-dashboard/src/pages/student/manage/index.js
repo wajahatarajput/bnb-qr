@@ -1,28 +1,39 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { server } from '../../../helpers';
 
 const ManageStudents = () => {
     const [students, setStudents] = useState([]);
 
     const getStudentsData = useCallback(async () => {
-        await server.get('/api/students').then((res) => {
-            setStudents(res.data)
-        })
+        try {
+            const response = await server.get('/api/students');
+            setStudents(response.data);
+        } catch (error) {
+            toast.error(`Error fetching students: ${error.response?.data?.message || error.message}`);
+        }
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await server.delete(`/api/students/${id}`).then((res) => {
-            setStudents(students => students.filter(student => student._id !== id));
-        })
+        try {
+            const response = await server.delete(`/api/students/${id}`);
+            if (response.status === 200) {
+                setStudents(students => students.filter(student => student._id !== id));
+                toast.success('Successfully deleted student!');
+            } else {
+                toast.error('Failed to delete student. Please try again.');
+            }
+        } catch (error) {
+            toast.error(`Error deleting student: ${error.response?.data?.message || error.message}`);
+        }
     }, []);
 
     useEffect(() => {
         getStudentsData();
-        return (() => {
+        return () => {
             setStudents([]);
-        });
+        };
     }, [getStudentsData]);
 
     return (

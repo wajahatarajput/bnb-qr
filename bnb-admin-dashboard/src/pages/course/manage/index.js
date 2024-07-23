@@ -1,21 +1,32 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { server } from '../../../helpers';
-
 
 const ManageCourses = () => {
     const [courses, setCourses] = useState([]);
 
     const getCoursesData = useCallback(async () => {
-        await server.get('/api/courses').then((res) => {
-            setCourses(res.data);
-        });
+        try {
+            const response = await server.get('/api/courses');
+            setCourses(response.data);
+        } catch (error) {
+            toast.error(`Error fetching courses: ${error.response?.data?.message || error.message}`);
+        }
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await server.delete(`/api/courses/${id}`).then((res) => {
-            setCourses(courses => courses.filter(course => course._id !== id));
-        });
+        try {
+            const response = await server.delete(`/api/courses/${id}`);
+            if (response.status === 200) {
+                setCourses(courses => courses.filter(course => course._id !== id));
+                toast.success('Successfully deleted course!');
+            } else {
+                toast.error('Failed to delete course. Please try again.');
+            }
+        } catch (error) {
+            toast.error(`Error deleting course: ${error.response?.data?.message || error.message}`);
+        }
     }, []);
 
     useEffect(() => {
@@ -30,7 +41,6 @@ const ManageCourses = () => {
             <div className="d-flex justify-content-end mb-3 gap-2">
                 <Link to={'/createcourse'} className="btn btn-primary">Add Course</Link>
                 <Link to={'/assigncourse'} className="btn btn-secondary">Assign Course</Link>
-
             </div>
             <table className="table">
                 <thead>

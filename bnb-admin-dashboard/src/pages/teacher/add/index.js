@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { server } from '../../../helpers';
@@ -7,17 +6,24 @@ const AddTeacherPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await server.post('/api/teachers', {
-            username: e.target[0].value,
-            password: e.target[1].value,
-            first_name: e.target[2].value,
-            last_name: e.target[3].value,
-            role: 'teacher'
-        }).then((res) => {
+        try {
+            const res = await server.post('/api/teachers', {
+                username: e.target[0].value,
+                password: e.target[1].value,
+                first_name: e.target[2].value,
+                last_name: e.target[3].value,
+                role: 'teacher'
+            });
+
             if (res.status === 201) {
                 toast.success("Added teacher successfully!");
+            } else {
+                toast.error("Failed to add teacher. Please try again.");
             }
-        })
+        } catch (error) {
+            console.error("Error adding teacher:", error);
+            toast.error("An error occurred while adding the teacher. Please try again later.");
+        }
     }, []);
 
     return (

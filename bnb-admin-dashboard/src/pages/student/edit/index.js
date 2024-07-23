@@ -10,31 +10,42 @@ const EditStudentPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await server.put(`/api/students/${e.target[0].value}`, {
-            username: e.target[1].value,
-            password: e.target[2].value,
-            first_name: e.target[3].value,
-            last_name: e.target[4].value,
-            leavingDate: e.target[5].value, // Added leavingDate field
-            status: e.target[6].value // Added status field
-        }).then((res) => {
+        try {
+            const res = await server.put(`/api/students/${e.target[0].value}`, {
+                username: e.target[1].value,
+                password: e.target[2].value,
+                first_name: e.target[3].value,
+                last_name: e.target[4].value,
+                leavingDate: e.target[5].value,
+                status: e.target[6].value
+            });
+
             if (res.status === 200) {
                 toast.success('Successfully updated student!');
+            } else {
+                toast.error('Failed to update student. Please try again.');
             }
-        })
+        } catch (error) {
+            console.error('Error updating student:', error);
+            toast.error('An error occurred while updating the student. Please try again later.');
+        }
     }, []);
 
     const getStudentData = useCallback(async () => {
-        await server.get(`/api/students/${params.id}`).then((res) => {
-            setStudent(res.data)
-        })
-    }, [params]);
+        try {
+            const res = await server.get(`/api/students/${params.id}`);
+            setStudent(res.data);
+        } catch (error) {
+            console.error('Error fetching student data:', error);
+            toast.error('An error occurred while fetching the student data. Please try again later.');
+        }
+    }, [params.id]);
 
     useEffect(() => {
         getStudentData();
-        return (() => {
-            setStudent([]);
-        });
+        return () => {
+            setStudent(null);
+        };
     }, [getStudentData]);
 
     return (

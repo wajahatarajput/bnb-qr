@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -10,40 +9,51 @@ const EditTeacherPage = () => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        await server.put(`/api/teachers/${e.target[0].value}`, {
-            username: e.target[1].value,
-            password: e.target[2].value,
-            first_name: e.target[3].value,
-            last_name: e.target[4].value,
-            leavingDate: e.target[5].value, // Added leavingDate field
-            status: e.target[6].value // Added status field
-        }).then((res) => {
+        try {
+            const res = await server.put(`/api/teachers/${e.target[0].value}`, {
+                username: e.target[1].value,
+                password: e.target[2].value,
+                first_name: e.target[3].value,
+                last_name: e.target[4].value,
+                leavingDate: e.target[5].value, // Added leavingDate field
+                status: e.target[6].value // Added status field
+            });
+
             if (res.status === 200) {
                 toast.success('Successfully updated teacher!');
+            } else {
+                toast.error('Failed to update teacher. Please try again.');
             }
-        })
+        } catch (error) {
+            console.error('Error updating teacher:', error);
+            toast.error('An error occurred while updating the teacher. Please try again later.');
+        }
     }, []);
 
-    const getteacherData = useCallback(async () => {
-        await server.get(`/api/teachers/${params.id}`).then((res) => {
-            setTeacher(res.data)
-        })
-    }, [params]);
+    const getTeacherData = useCallback(async () => {
+        try {
+            const res = await server.get(`/api/teachers/${params.id}`);
+            setTeacher(res.data);
+        } catch (error) {
+            console.error('Error fetching teacher data:', error);
+            toast.error('An error occurred while fetching the teacher data. Please try again later.');
+        }
+    }, [params.id]);
 
     useEffect(() => {
-        getteacherData();
-        return (() => {
-            setTeacher([]);
-        });
-    }, [getteacherData]);
+        getTeacherData();
+        return () => {
+            setTeacher(null);
+        };
+    }, [getTeacherData]);
 
     return (
         <div className="container mt-5">
             <h2>Edit Teacher</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-3" hidden>
-                    <label htmlFor="username" className="form-label">ID</label>
-                    <input type="text" className="form-control" defaultValue={teacher?._id} id="username" required />
+                    <label htmlFor="id" className="form-label">ID</label>
+                    <input type="text" className="form-control" defaultValue={teacher?._id} id="id" required />
                 </div>
                 <div className="mb-3">
                     <label htmlFor="username" className="form-label">Username (CMS ID)</label>

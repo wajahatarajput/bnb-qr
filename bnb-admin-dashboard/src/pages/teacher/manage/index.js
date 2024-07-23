@@ -1,29 +1,42 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { server } from '../../../helpers';
 
 const ManageTeachers = () => {
     const [teachers, setTeachers] = useState([]);
 
-    const getTeacherssData = useCallback(async () => {
-        await server.get('/api/teachers').then((res) => {
-            setTeachers(res.data)
-        })
+    const getTeachersData = useCallback(async () => {
+        try {
+            const res = await server.get('/api/teachers');
+            setTeachers(res.data);
+        } catch (error) {
+            console.error('Error fetching teachers:', error);
+            toast.error('An error occurred while fetching the teachers. Please try again later.');
+        }
     }, []);
 
     const handleDelete = useCallback(async (id) => {
-        await server.delete(`/api/teachers/${id}`).then((res) => {
-            setTeachers(teachers => teachers.filter(teacher => teacher._id !== id));
-        })
+        try {
+            const res = await server.delete(`/api/teachers/${id}`);
+            if (res.status === 200) {
+                setTeachers(teachers => teachers.filter(teacher => teacher._id !== id));
+                toast.success('Teacher deleted successfully!');
+            } else {
+                toast.error('Failed to delete teacher. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error deleting teacher:', error);
+            toast.error('An error occurred while deleting the teacher. Please try again later.');
+        }
     }, []);
 
     useEffect(() => {
-        getTeacherssData();
-        return (() => {
+        getTeachersData();
+        return () => {
             setTeachers([]);
-        });
-    }, [getTeacherssData]);
+        };
+    }, [getTeachersData]);
 
     return (
         <div className="container mt-4">

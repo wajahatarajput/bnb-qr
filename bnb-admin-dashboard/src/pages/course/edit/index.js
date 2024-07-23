@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-// Assuming you're using server for HTTP requests
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { server } from '../../../helpers';
@@ -10,37 +9,45 @@ function EditCourse() {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    await server.put(`/api/courses/${e.target[0].value}`, {
-      name: e.target[1].value,
-      department: e.target[2].value,
-      course_code: e.target[3].value,
-    }).then((res) => {
-      if (res.status === 200) {
-        toast.success('Successfully updated student!');
+    try {
+      const response = await server.put(`/api/courses/${e.target[0].value}`, {
+        name: e.target[1].value,
+        department: e.target[2].value,
+        course_code: e.target[3].value,
+      });
+      if (response.status === 200) {
+        toast.success('Successfully updated course!');
+      } else {
+        toast.error('Failed to update course. Please try again.');
       }
-    })
+    } catch (error) {
+      toast.error(`Error: ${error.response?.data?.message || error.message}`);
+    }
   }, []);
 
-  const getStudentData = useCallback(async () => {
-    await server.get(`/api/courses/${params.id}`).then((res) => {
-      setCourse(res.data)
-    })
-  }, [params]);
+  const getCourseData = useCallback(async () => {
+    try {
+      const response = await server.get(`/api/courses/${params.id}`);
+      setCourse(response.data);
+    } catch (error) {
+      toast.error(`Error fetching course data: ${error.response?.data?.message || error.message}`);
+    }
+  }, [params.id]);
 
   useEffect(() => {
-    getStudentData();
-    return (() => {
-      setCourse([]);
-    });
-  }, [getStudentData]);
+    getCourseData();
+    return () => {
+      setCourse(null);
+    };
+  }, [getCourseData]);
 
   return (
     <div className="container">
       <h1>Edit Course</h1>
       <form onSubmit={handleSubmit}>
         <div className="mb-3" hidden>
-          <label htmlFor="name" className="form-label">ID</label>
-          <input type="text" className="form-control" id="name" name="name" defaultValue={course?._id} required />
+          <label htmlFor="id" className="form-label">ID</label>
+          <input type="text" className="form-control" id="id" name="id" defaultValue={course?._id} required />
         </div>
         <div className="mb-3">
           <label htmlFor="name" className="form-label">Name</label>
