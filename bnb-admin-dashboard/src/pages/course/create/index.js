@@ -1,5 +1,6 @@
 import React from 'react';
 import { server } from '../../../helpers';
+import { toast } from 'react-toastify';
 
 
 function CreateCourse() {
@@ -11,9 +12,9 @@ function CreateCourse() {
                 department: e.target[1].value,
                 course_code: e.target[2].value,
             });
-            console.log(res.data);
+            toast.success("Course Added Successfully");
         } catch (error) {
-            console.error(error);
+            toast.error(error);
         }
     };
 

@@ -6,6 +6,7 @@ import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { server } from '../../helpers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowAltCircleLeft } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 
 // Register Chart.js components
 Chart.register(ArcElement, Tooltip, Legend);
@@ -16,14 +17,18 @@ function CourseHistory() {
     const [courseHistory, setCourseHistory] = useState([]);
 
     useEffect(() => {
-        server.get(`/api/courses/${id}/history`)
-            .then(response => {
-                setCourse(response.data);
-                setCourseHistory(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching course history', error);
-            });
+        try {
+            server.get(`/api/courses/${id}/history`)
+                .then(response => {
+                    setCourse(response.data);
+                    setCourseHistory(response.data);
+                })
+                .catch(error => {
+                    toast.error('Error fetching course history', error);
+                });
+        } catch (error) {
+            toast.error("Error fetching course history")
+        }
     }, [id]);
 
     const getSessionChartData = (session) => {

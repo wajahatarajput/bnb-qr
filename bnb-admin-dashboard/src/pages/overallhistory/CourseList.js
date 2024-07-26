@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
 import { server } from '../../helpers';
+import { toast } from 'react-toastify';
 
 // Register Chart.js components
 Chart.register(ArcElement, Tooltip, Legend);
@@ -12,13 +13,17 @@ function CourseList() {
     const [courses, setCourses] = useState([]);
 
     useEffect(() => {
-        server.get('/api/courses')
-            .then(response => {
-                setCourses(response?.data);
-            })
-            .catch(error => {
-                console.error('Error fetching courses', error);
-            });
+        try {
+            server.get('/api/courses')
+                .then(response => {
+                    setCourses(response?.data);
+                })
+                .catch(error => {
+                    toast.error('Error fetching courses', error);
+                });
+        } catch (error) {
+            toast.error("Error fetching Courses!");
+        }
     }, []);
 
     const getChartData = (course) => {
