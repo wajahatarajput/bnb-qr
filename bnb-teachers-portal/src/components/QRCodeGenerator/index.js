@@ -16,12 +16,13 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [session, setSession] = useState('');
     const [courseData, setCourseData] = useState(undefined);
     const [attendance, setAttendance] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     const { cookies } = useAuth();
 
     const data = JSON.stringify({
-        geoLocation: [
+        geoLocations: [
             longitude,
             latitude
         ],
@@ -38,10 +39,13 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                     setLatitude(position.coords.latitude);
                     setLongitude(position.coords.longitude);
 
+                    console.log(position)
+
+
                     server.post('/api/sessions', {
-                        geoLocation: [
-                            position.coords.longitude.toString(),
-                            position.coords.latitude.toString()
+                        geoLocations: [
+                            position.coords.longitude,
+                            position.coords.latitude
                         ],
                         courseId,
                         roomNumber,
@@ -49,7 +53,9 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                     }).then((res) => {
                         setSession(res.data?._id);
                         server.get(`/api/courses/${courseId}`).then((response) => {
-                            setCourseData(response.data)
+                            setCourseData(response.data);
+
+                            setLoading(false);
                         });
                     });
                 },
@@ -149,7 +155,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
             <div className='d-flex justify-content-end w-100 my-5'>
                 <button className='btn btn-secondary rounded' onClick={handleFinishSession}>Finish Session</button>
             </div>
-            {session && courseData ?
+            {session && courseData && !loading ?
                 <>
                     <h3> SESSION ID : {session}</h3>
                     <QRCode size={qrCodeSize} value={data} />
