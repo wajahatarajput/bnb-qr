@@ -26,6 +26,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
             longitude,
             latitude
         ],
+        sessionId: session,
         courseId,
         roomNumber,
         teacher: cookies.get('id')

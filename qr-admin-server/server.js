@@ -2039,6 +2039,8 @@ io.on('connection', (socket) => {
             // Destructure data for easier access
             const { sessionId, studentId, isPresent } = data;
 
+            console.log(data)
+
             // Find the session and student
             const session = await Session.findById(sessionId);
             const student = await Student.find({ user: studentId });

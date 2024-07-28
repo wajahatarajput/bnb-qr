@@ -9,11 +9,45 @@ import { toast } from 'react-toastify';
 const socket = io(SERVER_URL); // Assuming your server is running on localhost:3001
 
 const QRCodeScanner = () => {
-    const [scannedData, setScannedData] = useState('');
+    const [scannedData, setScannedData] = useState(null);
     const [isCameraAvailable, setIsCameraAvailable] = useState(true);
+    const [location, setLocation] = useState({
+        longitude: 0,
+        latitude: 0
+    })
     const [error, setError] = useState(null);
     const qrCodeScannerRef = useRef(null);
     const qrCodeRegionId = "html5qr-code-full-region";
+
+    useEffect(() => {
+        window.navigator.geolocation.getCurrentPosition((pos) => {
+            setLocation(pos.coords);
+        });
+
+        socket.on('attendanceMarked', ({ studentId, status }) => {
+            alert("Marked")
+            if (status && studentId === localStorage.getItem('id')) {
+                toast.success('Attendance Marked SuccessFul!');
+            }
+            else
+                toast.error('Attendance Unsuccessful!')
+        });
+    }, []);
+
+    useEffect(() => {
+        if (scannedData) {
+            const {
+                sessionId,
+                geoLocations: sessionLocation,
+            } = scannedData;
+            const { longitude, latitude } = location;
+            const [sLatitude, sLongitude] = sessionLocation;
+
+            // if (+latitude === +sLatitude && +longitude === +sLongitude) {
+            socket.emit('markAttendance', { studentId: localStorage.getItem('id'), sessionId, isPresent: true });
+            // }
+        }
+    }, [location, scannedData])
 
     useEffect(() => {
         const requestCameraPermission = async () => {
@@ -29,30 +63,8 @@ const QRCodeScanner = () => {
                         },
                         (decodedText, decodedResult) => {
                             // Handle on success condition with the decoded text or result.
-                            const {
-                                sessionId,
-                                sessioLocation,
-                            } = decodedResult;
 
-
-                            window.navigator.geolocation.getCurrentPosition((pos) => {
-                                const { latitude, longitude } = pos.coords;
-                                const { sLatitude, sLongitude } = sessioLocation;
-
-                                if (latitude === sLatitude && longitude === sLongitude) {
-                                    // student will be marked
-                                    socket.emit('markAttendance', { studentId: localStorage.getItem('id'), sessionId, isPresent: true });
-                                }
-                            })
-
-
-                            socket.on('attendanceMarked', ({ studentId, status }) => {
-                                if (status && studentId === localStorage.getItem('id'))
-                                    toast.success('Attendance Marked SuccessFul!')
-                                else
-                                    toast.error('Attendance Unsuccessful!')
-                            });
-                            setScannedData(decodedText);
+                            setScannedData(JSON.parse(decodedText));
                             alert(decodedText);
                             setError(null); // Clear any previous errors
                             stopScanning();
@@ -103,7 +115,7 @@ const QRCodeScanner = () => {
             <div className="row justify-content-center">
                 <div className="col-md-8 text-center">
                     <h1 className="mb-4">QR Scanner</h1>
-                    {isCameraAvailable ? (
+                    {isCameraAvailable && location.longitude !== 0 ? (
                         <div id={qrCodeRegionId} style={{ width: '100%' }}></div>
                     ) : (
                         <div className="alert alert-danger" role="alert">
@@ -112,7 +124,7 @@ const QRCodeScanner = () => {
                     )}
                     {scannedData && (
                         <div className="alert alert-success mt-3" role="alert">
-                            Scanned Data: {scannedData}
+                            Scanned Data: {scannedData.sessionId}
                         </div>
                     )}
                     {error && (
