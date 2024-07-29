@@ -2043,7 +2043,7 @@ io.on('connection', (socket) => {
 
             // Find the session and student
             const session = await Session.findById(sessionId);
-            const student = await Student.find({ user: studentId });
+            const student = await Student.findById(studentId);
 
             if (!session || !student) {
                 throw new Error('Invalid session or student ID');

@@ -72,11 +72,12 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
-        socket.on('attendanceMarked', ({ studentId, sessionId, status }) => {
+        socket.on('attendanceMarked', ({ session, student, status }) => {
+            console.log(student, session)
             if (status)
-                setAttendance(old => [...old, studentId])
+                setAttendance(old => [...old, student])
             else
-                setAttendance(old => old.filter(id => id !== studentId))
+                setAttendance(old => old.filter(id => id !== student))
         });
 
         // Clean up the socket event listener when component unmounts
@@ -101,37 +102,19 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         };
     }, []);
 
-
-    // Inside handleToggle function in QRCodeGenerator component
-    // const handleToggle = useCallback(async (studentId, session) => {
-    //     try {
-    //         // Emit socket event to mark attendance
-    //         socket.emit('markAttendance', { studentId: studentId, sessionId: session, isPresent: !attendance.includes(studentId) });
-
-    //     } catch (error) {
-    //         console.error('Error marking attendance:', error);
-    //     }
-    // }, [attendance]);
     const handleToggle = useCallback(
         async (studentId, session) => {
             try {
                 const isPresent = !attendance.includes(studentId); // Toggle the current state
                 socket.emit('markAttendance', { studentId, sessionId: session, isPresent }); // Emit socket event
-    
-                // Update local state optimistically assuming the server will confirm
-                if (isPresent) {
-                    setAttendance(oldAttendance => [...oldAttendance, studentId]);
-                } else {
-                    setAttendance(oldAttendance => oldAttendance.filter(id => id !== studentId));
-                }
             } catch (error) {
                 console.error('Error marking attendance:', error);
                 // Handle error, maybe show a toast or alert to the user
             }
         },
-        [attendance, socket]
+        [attendance]
     );
-    
+
     // Memoize the list of student components
     const memoizedStudentList = useMemo(() => {
         return courseData?.students.map((student) => (
@@ -178,13 +161,16 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
             {session && courseData && !loading ?
                 <>
                     <h3> SESSION ID : {session}</h3>
-                    <QRCode size={qrCodeSize} value={data} />
-                    <hr />
-                    <div>
-                        <h3>Students</h3>
-                        {memoizedStudentList}
-                    </div>
 
+                    <div className='d-flex flex-row gap-3'>
+                        <QRCode size={qrCodeSize} value={data} />
+                        <hr />
+                        <div>
+                            <h3>Students</h3>
+                            {memoizedStudentList}
+                        </div>
+
+                    </div>
                 </>
                 :
                 <div className="spinner-border text-primary" role="status">

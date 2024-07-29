@@ -38,10 +38,10 @@ const QRCodeScanner = () => {
         if (scannedData) {
             const {
                 sessionId,
-                geoLocations: sessionLocation,
+                // geoLocations: sessionLocation,
             } = scannedData;
-            const { longitude, latitude } = location;
-            const [sLatitude, sLongitude] = sessionLocation;
+            // const { longitude, latitude } = location;
+            // const [sLatitude, sLongitude] = sessionLocation;
 
             // if (+latitude === +sLatitude && +longitude === +sLongitude) {
             socket.emit('markAttendance', { studentId: localStorage.getItem('id'), sessionId, isPresent: true });
