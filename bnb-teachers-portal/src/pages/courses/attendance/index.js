@@ -54,6 +54,11 @@ const AttendanceRecords = () => {
         }
     };
 
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        return isNaN(date.getTime()) ? new Date().toLocaleString() : date.toLocaleString();
+    };
+
     return (
         <div className="container mt-5">
             <h2 className="mb-4">Attendance Records</h2>
@@ -83,7 +88,7 @@ const AttendanceRecords = () => {
                                             />
                                         </div>
                                     </td>
-                                    <td>{new Date(record.timestamp).toLocaleString()}</td>
+                                    <td>{formatTimestamp(record.timestamp)}</td>
                                 </tr>
                             ))}
                         </tbody>
