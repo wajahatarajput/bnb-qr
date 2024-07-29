@@ -118,15 +118,16 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     // Memoize the list of student components
     const memoizedStudentList = useMemo(() => {
         return courseData?.students.map((student) => (
-            <div className='d-flex gap-2' key={student._id} style={{ marginTop: '10px' }}>
-                <span>{student.user.first_name}</span>
-                <div className="form-check form-switch">
+            <div className="d-flex gap-2 align-items-center" key={student._id} style={{ marginTop: '10px' }}>
+                <span className='w-75 text-truncate'>{student.user.first_name}</span>
+                <div className="form-check form-switch w-25">
                     <input
                         className="form-check-input"
                         type="checkbox"
                         id={`custom-switch-${student._id}`}
                         checked={attendance.includes(student._id)}
                         onChange={() => handleToggle(student._id, session)}
+                        aria-label={`Toggle attendance for ${student.user.first_name}`}
                     />
                 </div>
             </div>
@@ -153,7 +154,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <div className='d-flex justify-content-center align-items-center w-100 flex-column p-5'>
 
             <div className='d-flex justify-content-end w-100 my-5'>
                 <button className='btn btn-secondary rounded' onClick={handleFinishSession}>Finish Session</button>
@@ -162,11 +163,12 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                 <>
                     <h3> SESSION ID : {session}</h3>
 
-                    <div className='d-flex flex-row gap-3'>
+                    <div className='d-block d-md-flex flex-row gap-3'>
                         <QRCode size={qrCodeSize} value={data} />
                         <hr />
-                        <div>
+                        <div className='bg-dark text-light p-5'>
                             <h3>Students</h3>
+                            <hr />
                             {memoizedStudentList}
                         </div>
 
