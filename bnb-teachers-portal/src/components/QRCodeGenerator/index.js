@@ -115,6 +115,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         [attendance]
     );
 
+
     // Memoize the list of student components
     const memoizedStudentList = useMemo(() => {
         return courseData?.students.map((student) => (
@@ -124,9 +125,9 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                     <input
                         className="form-check-input"
                         type="checkbox"
-                        id={`custom-switch-${student._id}`}
-                        checked={attendance.includes(student._id)}
-                        onChange={() => handleToggle(student._id, session)}
+                        id={`custom-switch-${student?.user._id}`}
+                        checked={attendance.includes(student?.user._id)}
+                        onChange={() => handleToggle(student?.user._id, session)}
                         aria-label={`Toggle attendance for ${student.user.first_name}`}
                     />
                 </div>

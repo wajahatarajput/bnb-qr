@@ -24,9 +24,8 @@ const QRCodeScanner = () => {
             setLocation(pos.coords);
         });
 
-        socket.on('attendanceMarked', ({ studentId, status }) => {
-            alert("Marked")
-            if (status && studentId === localStorage.getItem('id')) {
+        socket.on('attendanceMarked', ({ student, status }) => {
+            if (status && student === localStorage.getItem('id')) {
                 toast.success('Attendance Marked SuccessFul!');
             }
             else

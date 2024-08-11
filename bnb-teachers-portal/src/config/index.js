@@ -1,2 +1,2 @@
-export const SERVER_URL = 'http://localhost:5000';
-// export const SERVER_URL = 'https://smpk05nq-5000.asse.devtunnels.ms';
+// export const SERVER_URL = 'http://localhost:5000';
+export const SERVER_URL = 'https://rlhdjj1d-5000.inc1.devtunnels.ms/';

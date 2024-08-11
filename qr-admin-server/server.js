@@ -13,6 +13,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const PORT = process.env.PORT || 5000;
 
 
+
+
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -43,7 +45,13 @@ const server = http.createServer(app);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allows requests from all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allowed HTTP methods
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
+
 /**
  * @swagger
  * components:
@@ -2043,7 +2051,7 @@ io.on('connection', (socket) => {
 
             // Find the session and student
             const session = await Session.findById(sessionId);
-            const student = await Student.findById(studentId);
+            const student = await Student.find({ user: studentId });
 
             if (!session || !student) {
                 throw new Error('Invalid session or student ID');
