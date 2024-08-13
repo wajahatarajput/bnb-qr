@@ -20,8 +20,10 @@ function CourseHistory() {
         try {
             server.get(`/api/courses/${id}/history`)
                 .then(response => {
-                    setCourse(response.data);
-                    setCourseHistory(response.data);
+                    if (response?.data) {
+                        setCourse(response.data);
+                        setCourseHistory(response.data);
+                    }
                 })
                 .catch(error => {
                     toast.error('Error fetching course history', error);
@@ -62,7 +64,7 @@ function CourseHistory() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {courseHistory.map(session => (
+                                {courseHistory.length > 0 && courseHistory?.map(session => (
                                     <tr key={session._id}>
                                         <td>{new Date(session.sessionTime).toLocaleString()}</td>
                                         <td>{session.roomNumber}</td>

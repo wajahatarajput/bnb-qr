@@ -56,6 +56,7 @@ const AttendanceRecords = () => {
 
     const formatTimestamp = (timestamp) => {
         const date = new Date(timestamp);
+        console.log(date)
         return isNaN(date.getTime()) ? new Date().toLocaleString() : date.toLocaleString();
     };
 
