@@ -97,7 +97,6 @@ const courseSchema = new mongoose.Schema({
     sessions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Session' }] // Array of sessions associated with the course
 });
 
-// Define schema for attendance
 const attendanceSchema = new mongoose.Schema({
     session: {
         type: mongoose.Schema.Types.ObjectId,
@@ -112,9 +111,12 @@ const attendanceSchema = new mongoose.Schema({
     isPresent: {
         type: Boolean,
         default: false
+    },
+    fingerprint: {
+        type: String,
+        required: true
     }
 });
-
 // Define schema for session
 const sessionSchema = new mongoose.Schema({
     teacher: {

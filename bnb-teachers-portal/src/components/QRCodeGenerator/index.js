@@ -106,7 +106,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         async (studentId, session) => {
             try {
                 const isPresent = !attendance.includes(studentId); // Toggle the current state
-                socket.emit('markAttendance', { studentId, sessionId: session, isPresent }); // Emit socket event
+                socket.emit('markAttendance', { studentId, sessionId: session, isPresent, fingerprint: studentId }); // Emit socket event
             } catch (error) {
                 console.error('Error marking attendance:', error);
                 // Handle error, maybe show a toast or alert to the user

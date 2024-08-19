@@ -2038,30 +2038,48 @@ const io = socketIO(server, {
     }
 });  // Create a Socket.IO server instance
 
+
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-
     socket.on('markAttendance', async (data) => {
         try {
-            // Destructure data for easier access
-            const { sessionId, studentId, isPresent } = data;
+            const { sessionId, studentId, isPresent, fingerprint } = data;
 
-            console.log(data)
+            console.log(data);
 
             // Find the session and student
             const session = await Session.findById(sessionId);
-            const student = await Student.find({ user: studentId });
+            const student = await Student.findOne({ user: studentId });
 
             if (!session || !student) {
                 throw new Error('Invalid session or student ID');
             }
 
-            // Find existing attendance or create a new one
+            // Check if attendance has already been marked with the same fingerprint for this session
+            let existingAttendance = await Attendance.findOne({ session: sessionId, fingerprint });
+
+            if (existingAttendance) {
+                // If attendance is already marked with this fingerprint, do not allow it to be marked again
+                socket.emit('fingerprintFound', { session: sessionId, student: studentId, status: false, message: 'Attendance already marked with this fingerprint' });
+                console.log('Attendance already marked for this fingerprint');
+                return;
+            }
+
+            // Check if attendance has already been marked for this student in this session
             let attendance = await Attendance.findOne({ session: sessionId, student: student._id });
 
+            if (attendance && attendance.isPresent) {
+                socket.emit('attendanceMarked', { session: sessionId, student: studentId, status: false, message: 'Attendance already marked' });
+                console.log('Attendance already marked for this student');
+                return;
+            }
+
+            // If attendance has not been marked, create a new record or update the existing one
             if (!attendance) {
-                attendance = new Attendance({ session: sessionId, student: studentId });
+                attendance = new Attendance({ session: sessionId, student: student._id, fingerprint });
+            } else {
+                attendance.fingerprint = fingerprint; // Update fingerprint if needed
             }
 
             // Update the attendance status
@@ -2071,11 +2089,13 @@ io.on('connection', (socket) => {
             await attendance.save();
 
             // Emit the updated attendance status to all clients
-            io.emit('attendanceMarked', { session: sessionId, student: studentId, status: isPresent });
+            io.emit('attendanceMarked', { session: sessionId, student: studentId, status: true });
         } catch (error) {
             console.error('Error marking attendance:', error);
+            socket.emit('attendanceMarked', { session: sessionId, student: studentId, status: false, message: 'Error marking attendance' });
         }
     });
+
     // Handle disconnection
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
