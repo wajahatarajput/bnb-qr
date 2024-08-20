@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import logo from '../../assets/bnb.svg'
+import logo from '../../assets/bnb.png'
 import { useAuth } from '../../providers';
 import { useNavigate } from 'react-router-dom';
 
