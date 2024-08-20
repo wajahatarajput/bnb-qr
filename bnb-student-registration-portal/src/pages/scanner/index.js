@@ -80,16 +80,16 @@ const QRCodeScanner = () => {
 
                 const distance = haversineDistance(currentCoords, sessionCoords);
 
-                if (distance <= 10) { // 10 meters
-                    socket.emit('markAttendance', {
-                        studentId: localStorage.getItem('id'),
-                        sessionId,
-                        isPresent: true,
-                        fingerprint
-                    });
-                } else {
-                    toast.error('You are not within the required location range to mark attendance.');
-                }
+                // if (distance <= 10) { // 10 meters
+                socket.emit('markAttendance', {
+                    studentId: localStorage.getItem('id'),
+                    sessionId,
+                    isPresent: true,
+                    fingerprint
+                });
+                // } else {
+                //     toast.error('You are not within the required location range to mark attendance.');
+                // }
             }
         }
     }, [location, scannedData, fingerprint]);
@@ -134,17 +134,25 @@ const QRCodeScanner = () => {
         };
 
         const stopScanning = () => {
-            if (qrCodeScannerRef.current) {
-                qrCodeScannerRef.current.stop().then(() => {
-                    console.log('QR Code scanning stopped.');
-                    // Clear the element contents to ensure no further issues
-                    const element = document.getElementById(qrCodeRegionId);
-                    if (element) {
-                        element.innerHTML = '';
-                    }
-                }).catch(err => {
-                    console.error('Error stopping QR Code scanner:', err);
-                });
+            try {
+                if (qrCodeScannerRef.current && qrCodeScannerRef.current.isScanning()) {
+                    qrCodeScannerRef.current.stop()
+                        .then(() => {
+                            console.log('QR Code scanning stopped.');
+                            // Clear the element contents to ensure no further issues
+                            const element = document.getElementById(qrCodeRegionId);
+                            if (element) {
+                                element.innerHTML = '';
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error stopping QR Code scanner:', err);
+                        });
+                } else {
+                    console.log('Scanner is not running.');
+                }
+            } catch (error) {
+                console.error('Error stopping QR Code scanner:', error);
             }
         };
 
@@ -160,6 +168,7 @@ const QRCodeScanner = () => {
             <div className="row justify-content-center">
                 <div className="col-md-8 text-center">
                     <h1 className="mb-4">QR Scanner</h1>
+                    <h5> {`Your location is : ${location.longitude.toString()}, ${location.latitude.toString()}`}</h5>
                     {isCameraAvailable && location.longitude !== 0 ? (
                         <div id={qrCodeRegionId} style={{ width: '100%' }}></div>
                     ) : (
