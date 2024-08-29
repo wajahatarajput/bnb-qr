@@ -85,8 +85,8 @@ const QRCodeScanner = () => {
 
             if (sessionLocation && location.longitude !== 0 && location.latitude !== 0) {
                 const [sLatitude, sLongitude] = sessionLocation;
-                const sessionCoords = { latitude: sLatitude, longitude: sLongitude };
-                const currentCoords = { latitude: location.latitude, longitude: location.longitude };
+                const sessionCoords = { latitude: 24.8725513, longitude: 67.0173615 };
+                const currentCoords = { latitude: 24.8725399, longitude: 67.0173336 };
 
                 const distance = haversineDistance(currentCoords, sessionCoords);
 

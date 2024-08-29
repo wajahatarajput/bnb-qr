@@ -961,14 +961,14 @@ app.delete('/api/teachers/:id', jwtMiddleware, async (req, res) => {
  *       500:
  *         description: Server Error
  */
-app.get('/api/courses', jwtMiddleware, async (req, res) => {
-    try {
-        const courses = await Course.find();
-        res.status(200).send(courses);
-    } catch (error) {
-        res.status(500).send(error);
-    }
-});
+// app.get('/api/courses', jwtMiddleware, async (req, res) => {
+//     try {
+//         const courses = await Course.find();
+//         res.status(200).send(courses);
+//     } catch (error) {
+//         res.status(500).send(error);
+//     }
+// });
 
 /**
  * @swagger
@@ -1927,26 +1927,56 @@ app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) =
  *       500:
  *         description: Server Error
  */
-
-
 app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
     try {
         const { userId } = req.params;
-        const student = await Student.findOne({ user: userId }).populate('courses');
+
+        // Step 1: Find the student by user ID
+        const student = await Student.findOne({ user: userId });
 
         if (!student) {
             return res.status(404).json({ error: 'Student not found' });
         }
 
-        const sessions = await Session.find({
-            'attendance.student': student._id
-        }).populate('courseId attendance.student');
+        // Step 2: Find all attendance records for the student
+        const attendances = await Attendance.find({ student: student._id }).populate('session');
 
+        if (attendances.length === 0) {
+            return res.status(404).json({ error: 'No attendances found for this student' });
+        }
+
+        // Step 3: Group attendances by session ID
+        const sessionAttendanceMap = attendances.reduce((acc, attendance) => {
+            const sessionId = attendance.session._id.toString();
+            if (!acc[sessionId]) {
+                acc[sessionId] = [];
+            }
+            acc[sessionId].push({
+                isPresent: attendance.isPresent,
+                fingerprint: attendance.fingerprint,
+                student: student._id // or include other student details if needed
+            });
+            return acc;
+        }, {});
+
+        // Step 4: Find all sessions with populated attendance
+        const sessions = await Session.find({ _id: { $in: Object.keys(sessionAttendanceMap) } })
+            .populate('course')
+            .lean(); // .lean() makes it a plain object for easier manipulation
+
+        // Step 5: Embed attendances into each session
+        sessions.forEach(session => {
+            session.attendances = sessionAttendanceMap[session._id.toString()] || [];
+        });
+
+        // Return the sessions with nested attendance records
         res.json(sessions);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 });
+
 
 
 
@@ -2146,9 +2176,7 @@ createDefaultAdmin();
 app.get('/studentcourses', jwtMiddleware, async (req, res) => {
     const studentId = req.query.studentId;
     const student = await Student.find({ user: studentId }).populate('courses');
-
-    console.log(student)
-    res.json(student?.courses || []);
+    res.send(student || []);
 });
 
 /**
@@ -2282,19 +2310,37 @@ app.get('/api/studentcourses/:studentId', jwtMiddleware, async (req, res) => {
  *       500:
  *         description: Internal Server Error
  */
-app.get('/api/studentattendance/:studentId/:courseId', jwtMiddleware, async (req, res) => {
+app.get('/api/studentattendance/:studentId/:courseId', async (req, res) => {
     try {
         const { studentId, courseId } = req.params;
-        const attendance = await Attendance.find({ student: studentId }).populate({
-            path: 'session',
-            match: { course: courseId },
-        });
+        console.log(req.params);
+
+        // Find the student by studentId
+        const student = await Student.find({ user: studentId });
+
+        // Check if the student exists
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+        // Find attendance records for this student in the specific course
+        const attendance = await Attendance.find({
+            student: student[0]?._id?.toString()
+        }).
+            populate({
+                path: 'session',
+                match: { course: courseId },
+            });
+        // Log attendance for debugging
+        console.log('Attendance:', attendance);
+
         res.status(200).json(attendance);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+
 /**
  * @swagger
  * /api/teachercourses/{teacherId}:

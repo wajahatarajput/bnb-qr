@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../providers/AuthProvider';
-import { SERVER_URL } from '../../config';
 import { server } from '../../helpers';
 
 const StudentCourseHistoryPage = () => {
@@ -14,8 +13,9 @@ const StudentCourseHistoryPage = () => {
         const fetchCourses = async () => {
             try {
                 const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-                const response = await server.get(`${SERVER_URL}/studentcourses?studentId=${studentId}`);
-                setCourses(response.data);
+                const response = await server.get(`/studentcourses?studentId=${studentId}`);
+
+                setCourses(response.data[0].courses || []);
             } catch (err) {
                 setError('There was an error fetching the courses.');
                 console.error('Error fetching courses:', err);
@@ -29,7 +29,8 @@ const StudentCourseHistoryPage = () => {
             if (selectedCourse) {
                 try {
                     const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-                    const response = await server.get(`${SERVER_URL}/studentattendance?studentId=${studentId}&courseId=${selectedCourse}`);
+                    // Make the request with path parameters instead of query parameters
+                    const response = await server.get(`/api/studentattendance/${studentId}/${selectedCourse}`);
                     setAttendance(response.data);
                 } catch (err) {
                     setError('There was an error fetching the attendance.');
@@ -52,7 +53,7 @@ const StudentCourseHistoryPage = () => {
                 <label htmlFor="courseSelect" className="form-label">Select Course</label>
                 <select id="courseSelect" className="form-select" onChange={handleCourseChange}>
                     <option value="">Select a course</option>
-                    {courses.map(course => (
+                    {courses?.map(course => (
                         <option key={course._id} value={course._id}>{course.name}</option>
                     ))}
                 </select>
@@ -62,21 +63,31 @@ const StudentCourseHistoryPage = () => {
                     <table className="table table-striped">
                         <thead>
                             <tr>
-                                <th scope="col">Course Name</th>
                                 <th scope="col">Room Number</th>
                                 <th scope="col">Date</th>
                                 <th scope="col">Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {attendance.map((record, index) => (
-                                <tr key={index}>
-                                    <td>{record.courseName}</td>
-                                    <td>{record.roomNumber}</td> {/* Display room number */}
-                                    <td>{record.date}</td>
-                                    <td>{record.status}</td>
-                                </tr>
-                            ))}
+                            {attendance.map((record, index) => {
+                                // Format the sessionTime
+                                const formattedTime = new Intl.DateTimeFormat('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: 'numeric',
+                                    hour12: true, // for AM/PM format
+                                }).format(new Date(record?.session?.sessionTime));
+
+                                return (
+                                    <tr key={index}>
+                                        <td>{record?.session?.roomNumber}</td> {/* Display room number */}
+                                        <td>{formattedTime}</td> {/* Display formatted session time */}
+                                        <td>{record.isPresent ? 'Present' : 'Absent'}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

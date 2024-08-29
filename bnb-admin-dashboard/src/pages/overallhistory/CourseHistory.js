@@ -73,7 +73,10 @@ function CourseHistory() {
                                         <td>{session.presentCount}</td>
                                         <td>{session.absentCount}</td>
                                         <td>
-                                            <Doughnut data={getSessionChartData(session)} />
+                                            <div style={{ width: '150px', height: '150px' }}>
+                                                <Doughnut data={getSessionChartData(session)} />
+                                            </div>
+
                                         </td>
                                     </tr>
                                 ))}

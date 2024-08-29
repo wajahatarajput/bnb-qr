@@ -62,7 +62,9 @@ function CourseList() {
                                 <td>{course.sessions.length || 0}</td>
                                 <td>{course?.attendanceAverage?.toFixed(2) || 0}</td>
                                 <td>
-                                    <Doughnut data={getChartData(course)} />
+                                    <div style={{ width: '150px', height: '150px' }}>
+                                        <Doughnut data={getChartData(course)} />
+                                    </div>
                                 </td>
                                 <td>
                                     <Link to={`/course-history/${course._id}`} className="btn btn-dark rounded-pill">History</Link>

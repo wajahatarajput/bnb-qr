@@ -15,19 +15,23 @@ const AttendanceHistory = () => {
 
     useEffect(() => {
         const fetchAttendance = async () => {
-            try {
-                const response = await server.get(`/attendance-history/${cookies.get('id')}`);
-                const data = response.data;
-                setAttendance(data);
-                setFilteredAttendance(data); // Initially show all data
+            // try {
+            const response = await server.get(`/attendance-history/${cookies.get('id')}`);
+            const data = response.data;
+            setAttendance(data || []);
+            setFilteredAttendance(data || []); // Initially show all data
+            setError('');
+            // Extract unique courses
+            const uniqueCourses = [
+                ...new Map(
+                    data.map(session => [session.course._id, session.course])
+                ).values()
+            ];
+            setCourses(uniqueCourses);
 
-                // Extract unique courses from the attendance data
-                const uniqueCourses = [...new Map(data.map(session => [session.courseId._id, session.courseId])).values()];
-                setCourses(uniqueCourses);
-
-            } catch (err) {
-                setError('Failed to fetch attendance history.');
-            }
+            // } catch (err) {
+            //     setError('Failed to fetch attendance history.');
+            // }
         };
 
         fetchAttendance();
@@ -55,7 +59,7 @@ const AttendanceHistory = () => {
             }
 
             if (courseFilter !== 'all') {
-                filtered = filtered.filter(session => session.courseId._id === courseFilter);
+                filtered = filtered.filter(session => session.course._id === courseFilter);
             }
 
             return filtered;
@@ -66,7 +70,7 @@ const AttendanceHistory = () => {
 
     return (
         <div className="container mt-5">
-            {error && <div className="alert alert-danger">{error}</div>}
+            {error !== '' && <div className="alert alert-danger">{error}</div>}
             <div className='d-flex justify-content-between'>
                 <h1>Attendance History</h1>
                 <div className='d-flex'>
@@ -114,12 +118,12 @@ const AttendanceHistory = () => {
                 <tbody>
                     {filteredAttendance.map((session) => (
                         <tr key={session._id}>
-                            <td>{session.courseId.name}</td>
+                            <td>{session.course.name}</td>
                             <td>{new Date(session.sessionTime).toLocaleString()}</td>
                             <td>{session.roomNumber}</td>
                             <td>
-                                {session.attendance.map((att) => (
-                                    <span key={att.student._id}>
+                                {session.attendances.map((att, index) => (
+                                    <span key={index}>
                                         {att.student._id === cookies.get('id') && att.isPresent ? 'Present' : 'Absent'}
                                     </span>
                                 ))}
