@@ -30,9 +30,19 @@ const QRCodeScanner = () => {
     };
 
     useEffect(() => {
-        window.navigator.geolocation.getCurrentPosition((pos) => {
-            setLocation(pos.coords);
-        });
+        window.navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocation(pos.coords);
+            },
+            (error) => {
+                console.error(error);
+            },
+            {
+                enableHighAccuracy: true, // Request high accuracy
+                timeout: 5000,            // Optional: Set timeout (in milliseconds)
+                maximumAge: 0             // Optional: Do not use cached location
+            }
+        );
         socket.on('attendanceMarked', ({ student, status }) => {
             if (status && student === localStorage.getItem('id')) {
                 toast.success('Attendance Marked SuccessFul!');
