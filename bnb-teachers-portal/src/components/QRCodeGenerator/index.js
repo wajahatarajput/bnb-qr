@@ -40,8 +40,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                     setLatitude(position.coords.latitude);
                     setLongitude(position.coords.longitude);
 
-                    console.log(position)
-
+                    console.log(position);
 
                     server.post('/api/sessions', {
                         geoLocations: [
@@ -55,19 +54,24 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                         setSession(res.data?._id);
                         server.get(`/api/courses/${courseId}`).then((response) => {
                             setCourseData(response.data);
-
                             setLoading(false);
                         });
                     });
                 },
                 (error) => {
                     console.error('Error getting location:', error);
+                },
+                {
+                    enableHighAccuracy: true, // Request high accuracy
+                    timeout: 5000,            // Optional: Set timeout (in milliseconds)
+                    maximumAge: 0             // Optional: Do not use cached location
                 }
             );
         } else {
             console.error('Geolocation is not supported by this browser.');
         }
     }, [cookies, courseId, roomNumber]);
+
 
 
     useEffect(() => {

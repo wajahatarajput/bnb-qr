@@ -58,8 +58,8 @@ function CourseList() {
                             <tr key={course._id}>
                                 <td>{course.name}</td>
                                 <td>{course.department}</td>
-                                <td>{course.totalStudents || 0}</td>
-                                <td>{course.totalSessions || 0}</td>
+                                <td>{course.students.length || 0}</td>
+                                <td>{course.sessions.length || 0}</td>
                                 <td>{course?.attendanceAverage?.toFixed(2) || 0}</td>
                                 <td>
                                     <Doughnut data={getChartData(course)} />

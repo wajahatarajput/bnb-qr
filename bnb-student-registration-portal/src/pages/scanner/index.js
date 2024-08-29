@@ -90,16 +90,18 @@ const QRCodeScanner = () => {
 
                 const distance = haversineDistance(currentCoords, sessionCoords);
 
-                if (distance <= 10) { // 10 meters
-                    socket.emit('markAttendance', {
-                        studentId: localStorage.getItem('id'),
-                        sessionId,
-                        isPresent: true,
-                        fingerprint
-                    });
-                } else {
-                    toast.error('You are not within the required location range to mark attendance.');
-                }
+                alert(distance)
+
+                // if (distance <= 10) { // 10 meters
+                socket.emit('markAttendance', {
+                    studentId: localStorage.getItem('id'),
+                    sessionId,
+                    isPresent: true,
+                    fingerprint
+                });
+                // } else {
+                //     toast.error('You are not within the required location range to mark attendance.');
+                // }
             }
         }
     }, [location, scannedData, fingerprint]);

@@ -44,6 +44,8 @@ function CourseHistory() {
         };
     };
 
+    console.log(courseHistory)
+
     return (
         <div className="container m-5">
 
@@ -64,7 +66,7 @@ function CourseHistory() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {courseHistory.length > 0 && courseHistory?.map(session => (
+                                {courseHistory?.sessionDetails?.length > 0 && courseHistory?.sessionDetails?.map(session => (
                                     <tr key={session._id}>
                                         <td>{new Date(session.sessionTime).toLocaleString()}</td>
                                         <td>{session.roomNumber}</td>
