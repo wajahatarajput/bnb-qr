@@ -41,7 +41,7 @@ const AttendanceRecords = () => {
     const toggleAttendance = async (studentId) => {
         setAttendanceRecords(prevRecords =>
             prevRecords.map(record =>
-                record.student === studentId
+                record.student?._id === studentId
                     ? { ...record, isPresent: !record.isPresent }
                     : record
             )
@@ -78,14 +78,14 @@ const AttendanceRecords = () => {
                         <tbody>
                             {attendanceRecords.map((record, index) => (
                                 <tr key={index}>
-                                    <td>{record.student}</td>
+                                    <td>{record?.student?.user?.first_name}</td>
                                     <td>
                                         <div className="form-check form-switch">
                                             <input
                                                 className="form-check-input"
                                                 type="checkbox"
                                                 checked={record.isPresent}
-                                                onChange={() => toggleAttendance(record.student)}
+                                                onChange={() => toggleAttendance(record.student?._id)}
                                             />
                                         </div>
                                     </td>

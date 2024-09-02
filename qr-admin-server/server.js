@@ -1431,24 +1431,40 @@ app.get('/api/attendance/session/:sessionId', jwtMiddleware, async (req, res) =>
         const { sessionId } = req.params;
         const { page = 1, limit = 10 } = req.query;
 
+        // Find the session by ID
         const session = await Session.findById(sessionId).exec();
 
         if (!session) {
             return res.status(404).json({ message: 'Session not found' });
         }
 
+        // Count total attendance records for pagination
         const totalRecords = await Attendance.countDocuments({ session: sessionId });
+
+        // Fetch attendance records and populate student details
         const attendanceRecords = await Attendance.find({ session: sessionId })
+            .populate({
+                path: 'student', // Populate the student field
+                select: 'user courses', // Select specific fields you want from the student model
+                populate: {
+                    path: 'user', // Further populate the user field inside student
+                    select: 'first_name last_name username' // Select specific fields from the user model
+                }
+            })
             .skip((page - 1) * limit)
             .limit(parseInt(limit))
             .exec();
+
+        // Determine if there are more records to paginate
         const hasMore = (page * limit) < totalRecords;
 
+        // Return attendance records with populated student details
         res.json({ attendanceRecords, hasMore });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 
 
@@ -2219,8 +2235,6 @@ io.on('connection', (socket) => {
     socket.on('markAttendance', async (data) => {
         try {
             const { sessionId, studentId, isPresent, fingerprint } = data;
-
-            console.log(data);
 
             // Find the session and student
             const session = await Session.findById(sessionId);
