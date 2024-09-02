@@ -35,8 +35,8 @@ const ManageAdmins = () => {
                     <tr>
                         <th hidden>ID</th>
                         <th>Username</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
+                        <th>Name</th>
+                        <th>Role</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -45,8 +45,8 @@ const ManageAdmins = () => {
                         <tr key={index}>
                             <td hidden>{admin?._id}</td>
                             <td>{admin?.username}</td>
-                            <td>{admin?.first_name}</td>
-                            <td>{admin?.last_name}</td>
+                            <td>{admin?.first_name}- {admin?.last_name}</td>
+                            <td>{admin?.role}</td>
                             <td className='d-flex gap-2'>
                                 <Link
                                     className="btn btn-secondary"

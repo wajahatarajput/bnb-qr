@@ -10,6 +10,7 @@ function EditCourse() {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
+      const form = e.target;
       const response = await server.put(`/api/courses/${e.target[0].value}`, {
         name: e.target[1].value,
         department: e.target[2].value,
@@ -17,6 +18,7 @@ function EditCourse() {
       });
       if (response.status === 200) {
         toast.success('Successfully updated course!');
+        form.reset();
       } else {
         toast.error('Failed to update course. Please try again.');
       }

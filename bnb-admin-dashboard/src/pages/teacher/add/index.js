@@ -7,6 +7,8 @@ const AddTeacherPage = () => {
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         try {
+
+            const form = e.target;
             const res = await server.post('/api/teachers', {
                 username: e.target[0].value,
                 password: e.target[1].value,
@@ -17,6 +19,7 @@ const AddTeacherPage = () => {
 
             if (res.status === 201) {
                 toast.success("Added teacher successfully!");
+                form.reset();
             } else {
                 toast.error("Failed to add teacher. Please try again.");
             }

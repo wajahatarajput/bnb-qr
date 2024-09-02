@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { server } from '../../../helpers';
+import { toast } from 'react-toastify';
 
 
 const AssignCourse = () => {
@@ -35,9 +36,9 @@ const AssignCourse = () => {
     const assignCourse = async () => {
         try {
             const response = await server.post(`/assigncourse/${teacherId}/${courseId}`);
-            setMessage(response.data.message);
+            toast.success(response.data.message);
         } catch (error) {
-            setMessage('Error assigning course');
+            toast.error('Error assigning course');
             console.error(error);
         }
     };

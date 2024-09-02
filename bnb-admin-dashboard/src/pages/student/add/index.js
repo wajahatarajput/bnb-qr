@@ -7,6 +7,8 @@ const AddStudentPage = () => {
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         try {
+
+            const form = e.target;
             const res = await server.post('/api/students', {
                 username: e.target[0].value,
                 password: e.target[1].value,
@@ -17,6 +19,7 @@ const AddStudentPage = () => {
 
             if (res.status === 201) {
                 toast.success("Added student successfully!");
+                form.reset();
             } else {
                 toast.error("Failed to add student. Please try again.");
             }
