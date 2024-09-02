@@ -59,49 +59,49 @@ const QRCodeScanner = () => {
         });
     }, []);
 
-    const haversineDistance = (coords1, coords2) => {
-        const toRad = (value) => value * Math.PI / 180;
+    // const haversineDistance = (coords1, coords2) => {
+    //     const toRad = (value) => value * Math.PI / 180;
 
-        const R = 6371e3; // Earth's radius in meters
-        const lat1 = toRad(coords1.latitude);
-        const lat2 = toRad(coords2.latitude);
-        const deltaLat = toRad(coords2.latitude - coords1.latitude);
-        const deltaLong = toRad(coords2.longitude - coords1.longitude);
+    //     const R = 6371e3; // Earth's radius in meters
+    //     const lat1 = toRad(coords1.latitude);
+    //     const lat2 = toRad(coords2.latitude);
+    //     const deltaLat = toRad(coords2.latitude - coords1.latitude);
+    //     const deltaLong = toRad(coords2.longitude - coords1.longitude);
 
-        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-            Math.cos(lat1) * Math.cos(lat2) *
-            Math.sin(deltaLong / 2) * Math.sin(deltaLong / 2);
+    //     const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    //         Math.cos(lat1) * Math.cos(lat2) *
+    //         Math.sin(deltaLong / 2) * Math.sin(deltaLong / 2);
 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    //     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        const distance = R * c; // Distance in meters
+    //     const distance = R * c; // Distance in meters
 
-        return distance;
-    };
+    //     return distance;
+    // };
 
     useEffect(() => {
         if (scannedData) {
             const { sessionId, geoLocations: sessionLocation } = scannedData;
 
             if (sessionLocation && location.longitude !== 0 && location.latitude !== 0) {
-                const [sLatitude, sLongitude] = sessionLocation;
-                const sessionCoords = { latitude: sLatitude, longitude: sLongitude };
-                const currentCoords = { latitude: location.latitude, longitude: location.longitude };
+                // const [sLatitude, sLongitude] = sessionLocation;
+                // const sessionCoords = { latitude: sLatitude, longitude: sLongitude };
+                // const currentCoords = { latitude: location.latitude, longitude: location.longitude };
 
-                const distance = haversineDistance(currentCoords, sessionCoords);
+                // const distance = haversineDistance(currentCoords, sessionCoords);
 
-                alert(distance)
+                // alert(distance)
 
-                if (distance <= 1000) { // 10 meters
-                    socket.emit('markAttendance', {
-                        studentId: localStorage.getItem('id'),
-                        sessionId,
-                        isPresent: true,
-                        fingerprint
-                    });
-                } else {
-                    toast.error('You are not within the required location range to mark attendance.');
-                }
+                // if (distance <= 1000) { // 10 meters
+                socket.emit('markAttendance', {
+                    studentId: localStorage.getItem('id'),
+                    sessionId,
+                    isPresent: true,
+                    fingerprint
+                });
+                // } else {
+                //     toast.error('You are not within the required location range to mark attendance.');
+                // }
             }
         }
     }, [location, scannedData, fingerprint]);
@@ -181,9 +181,9 @@ const QRCodeScanner = () => {
                 <div className="col-md-8 text-center">
                     <h1 className="mb-4">QR Scanner</h1>
                     <h5> {`Your location is : ${location.longitude.toString()}, ${location.latitude.toString()}`}</h5>
-                    {isCameraAvailable && location.longitude !== 0 ? (
-                        <div id={qrCodeRegionId} style={{ width: '100%' }}></div>
-                    ) : (
+
+                    <div id={qrCodeRegionId} style={{ width: '100%' }}></div>
+                    {!isCameraAvailable && location.longitude === 0 && (
                         <div className="alert alert-danger" role="alert">
                             Camera not available. Please check your permissions or try another device.
                         </div>
