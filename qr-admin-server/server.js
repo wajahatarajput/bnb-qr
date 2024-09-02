@@ -2223,7 +2223,6 @@ app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) =
 });
 
 
-
 /**
  * @swagger
  * /api/attendance-history/{userId}:
@@ -2247,31 +2246,61 @@ app.post('/assigncourse/:teacherId/:courseId', jwtMiddleware, async (req, res) =
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Session'
+ *                 type: object
+ *                 properties:
+ *                   session:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       course:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                   attendances:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         isPresent:
+ *                           type: boolean
+ *                         fingerprint:
+ *                           type: string
+ *                         student:
+ *                           type: string
  *       404:
- *         description: Student not found
+ *         description: Student or attendance records not found
  *       500:
  *         description: Server Error
  */
-app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
+app.get('/api/attendance-history/:userId', jwtMiddleware, async (req, res) => {
     try {
         const { userId } = req.params;
 
-        // Step 1: Find the student by user ID
+        // Find the student by user ID
         const student = await Student.findOne({ user: userId });
-
         if (!student) {
             return res.status(404).json({ error: 'Student not found' });
         }
 
-        // Step 2: Find all attendance records for the student
+        // Find all attendance records for the student
         const attendances = await Attendance.find({ student: student._id }).populate('session');
-
         if (attendances.length === 0) {
-            return res.status(404).json({ error: 'No attendances found for this student' });
+            return res.status(404).json({ error: 'No attendance records found for this student' });
         }
 
-        // Step 3: Group attendances by session ID
+        // Extract session IDs
+        const sessionIds = attendances.map(att => att.session._id);
+
+        // Find all sessions with course information
+        const sessions = await Session.find({ _id: { $in: sessionIds } })
+            .populate('course')
+            .lean(); // Convert to plain JavaScript object for easier manipulation
+
+        // Map session IDs to their attendance records
         const sessionAttendanceMap = attendances.reduce((acc, attendance) => {
             const sessionId = attendance.session._id.toString();
             if (!acc[sessionId]) {
@@ -2280,17 +2309,12 @@ app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
             acc[sessionId].push({
                 isPresent: attendance.isPresent,
                 fingerprint: attendance.fingerprint,
-                student: student._id // or include other student details if needed
+                student: student._id.toString() // Convert to string for consistency
             });
             return acc;
         }, {});
 
-        // Step 4: Find all sessions with populated attendance
-        const sessions = await Session.find({ _id: { $in: Object.keys(sessionAttendanceMap) } })
-            .populate('course')
-            .lean(); // .lean() makes it a plain object for easier manipulation
-
-        // Step 5: Embed attendances into each session
+        // Embed attendances into each session
         sessions.forEach(session => {
             session.attendances = sessionAttendanceMap[session._id.toString()] || [];
         });
@@ -2302,6 +2326,7 @@ app.get('/attendance-history/:userId', jwtMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
 
 
 

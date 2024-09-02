@@ -16,7 +16,7 @@ const AttendanceHistory = () => {
     useEffect(() => {
         const fetchAttendance = async () => {
             // try {
-            const response = await server.get(`/attendance-history/${cookies.get('id')}`);
+            const response = await server.get(`/api/attendance-history/${cookies.get('id')}`);
             const data = response.data;
             setAttendance(data || []);
             setFilteredAttendance(data || []); // Initially show all data
@@ -124,7 +124,7 @@ const AttendanceHistory = () => {
                             <td>
                                 {session.attendances.map((att, index) => (
                                     <span key={index}>
-                                        {att.student._id === cookies.get('id') && att.isPresent ? 'Present' : 'Absent'}
+                                        {att.isPresent ? 'Present' : 'Absent'}
                                     </span>
                                 ))}
                             </td>
