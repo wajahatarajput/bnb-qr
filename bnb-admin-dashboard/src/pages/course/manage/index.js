@@ -79,6 +79,7 @@ const ManageCourses = () => {
                         <tr>
                             <th hidden>ID</th>
                             <th>Name</th>
+                            <th>Course Code</th>
                             <th>Department</th>
                             <th>Teacher</th>
                             <th>Total Students</th>
@@ -92,13 +93,14 @@ const ManageCourses = () => {
                             <tr key={index}>
                                 <td hidden>{course._id}</td>
                                 <td>{course.name}</td>
+                                <td>{course.course_code}</td>
                                 <td>{course.department}</td>
                                 <td>{course?.teacher?.first_name} {course?.teacher?.last_name}</td>
                                 <td>{course.totalStudents}</td>
                                 <td>{course.totalSessions}</td>
                                 <td>{course.attendanceAverage.toFixed(2)}%</td>
                                 <td className='d-flex gap-2'>
-                                    <Link to={`/manageassignment/${course._id}`} className="btn btn-secondary">Manage Assigned Course</Link>
+                                    <Link to={`/manageassignment/${course._id}`} className="btn btn-secondary">Manage Assignment</Link>
                                     <Link className="btn btn-secondary" to={`/editcourse/${course._id}`}>
                                         Edit
                                     </Link>
