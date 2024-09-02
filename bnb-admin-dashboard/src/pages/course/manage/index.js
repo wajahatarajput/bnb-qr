@@ -93,7 +93,7 @@ const ManageCourses = () => {
                                 <td hidden>{course._id}</td>
                                 <td>{course.name}</td>
                                 <td>{course.department}</td>
-                                <td>{course?.sessions[0]?.teacher?.user?.first_name}</td>
+                                <td>{course?.teacher?.first_name} {course?.teacher?.last_name}</td>
                                 <td>{course.totalStudents}</td>
                                 <td>{course.totalSessions}</td>
                                 <td>{course.attendanceAverage.toFixed(2)}%</td>

@@ -57,7 +57,7 @@ function ManageAssignedCourses() {
                     <input type="text" className="form-control" id="id" name="id" defaultValue={course?._id} required />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="teacherId" className="form-label">Current Teacher: {course?.sessions[0]?.teacher?.user?.first_name} {course?.sessions[0]?.teacher?.user?.last_name}</label>
+                    <label htmlFor="teacherId" className="form-label">Current Teacher: {course?.teacher?.first_name} {course?.teacher?.last_name}</label>
                     <select className="form-select" id="teacherId" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
                         <option value="">Select Teacher</option>
                         {teachers?.map((teacher) => (

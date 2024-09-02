@@ -1115,7 +1115,6 @@ app.delete('/api/teachers/:id', jwtMiddleware, async (req, res) => {
 //         res.status(500).send(error);
 //     }
 // });
-
 /**
  * @swagger
  * /api/courses/{id}:
@@ -1148,17 +1147,19 @@ app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
         const { id } = req.params;
 
         // Find the course by ID
-        const course = await Course.findById({ _id: id }).populate('students').populate({
-            path: 'sessions',
-            populate: {
-                path: 'teacher', // Populate teacher details in the sessions
-                select: 'user courses', // You can select specific fields if necessary
+        const course = await Course.findById({ _id: id })
+            .populate('students')
+            .populate({
+                path: 'sessions',
                 populate: {
-                    path: 'user', // Populate user details within the teacher
-                    select: 'first_name last_name _id'
+                    path: 'teacher', // Populate teacher details in the sessions
+                    select: 'user courses', // You can select specific fields if necessary
+                    populate: {
+                        path: 'user', // Populate user details within the teacher
+                        select: 'first_name last_name _id'
+                    }
                 }
-            }
-        });
+            });
 
         if (!course) {
             return res.status(404).send({ message: 'Course not found' });
@@ -1172,11 +1173,22 @@ app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
 
         course.students = students;
 
-        res.send(course);
+        // Find the teacher associated with this course
+        const teacher = await Teacher.findOne({ courses: course._id })
+            .populate('user', 'username first_name last_name role');
+
+        // Append teacher to course object
+        const courseWithTeacher = {
+            ...course.toObject(),
+            teacher: teacher ? teacher.user : null // Include teacher details if found
+        };
+
+        res.send(courseWithTeacher);
     } catch (error) {
         res.status(500).send(error);
     }
 });
+
 
 
 /**
@@ -2814,11 +2826,16 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
 
             const attendanceAverage = totalAttendance ? (presentCount / totalAttendance) * 100 : 0;
 
+            // Find the teacher associated with this course
+            const teacher = await Teacher.findOne({ courses: course._id })
+                .populate('user', 'username first_name last_name role');
+
             return {
                 ...course.toObject(),
                 totalStudents,
                 totalSessions,
-                attendanceAverage
+                attendanceAverage,
+                teacher: teacher ? teacher.user : null // Append teacher details if found
             };
         }));
 
@@ -2832,6 +2849,7 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 
 /**
