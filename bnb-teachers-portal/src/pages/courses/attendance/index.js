@@ -42,6 +42,8 @@ const AttendanceRecords = () => {
     const toggleAttendance = async (studentId, currentStatus) => {
         const newStatus = !currentStatus; // Toggle the current state
 
+        console.log(studentId)
+
         try {
             // Optionally define a fingerprint or unique identifier
             const fingerprint = studentId; // Use studentId as the fingerprint, or adjust as needed
@@ -52,12 +54,12 @@ const AttendanceRecords = () => {
                 fingerprint
             });
 
-            const { isPresent } = response?.data;
+            const { isPresent, student } = response?.data;
 
             // Update local state to reflect the change
             setAttendanceRecords(prevRecords =>
                 prevRecords.map(record =>
-                    record.student?._id === studentId
+                    record.student?.user?._id === student
                         ? { ...record, isPresent }
                         : record
                 )
@@ -103,7 +105,7 @@ const AttendanceRecords = () => {
                                                 className="form-check-input"
                                                 type="checkbox"
                                                 checked={record.isPresent}
-                                                onChange={() => toggleAttendance(record?.student?._id, record.isPresent)}
+                                                onChange={() => toggleAttendance(record?.student?.user?._id, record?.isPresent)}
                                             />
                                         </div>
                                     </td>

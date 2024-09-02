@@ -3150,6 +3150,8 @@ app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
     const { sessionId, studentId } = req.params;
     const { isPresent, fingerprint } = req.body;
 
+    console.log(fingerprint, isPresent, studentId, sessionId)
+
     try {
 
 
@@ -3173,9 +3175,9 @@ app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
             attendance.isPresent = isPresent;
 
             // Optionally update the fingerprint if necessary
-            // if (fingerprint) {
-            //     attendance.fingerprint = fingerprint;
-            // }
+            if (fingerprint) {
+                attendance.fingerprint = fingerprint;
+            }
         }
 
         await attendance.save();
