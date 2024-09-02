@@ -67,7 +67,8 @@ function Dashboard(props) {
                             <div>
                                 {/* Logged in user avatar */}
                                 <span>
-                                    <span className='m-2'>{cookies.get('username')}</span>
+
+                                    <span className='m-2'>{cookies.get('first_name')}</span>
                                     <FontAwesomeIcon icon={faUserCircle} size='lg' color="#fff"
                                         className="rounded-circle me-5 mt-1"
                                         onClick={handleAvatarClick}

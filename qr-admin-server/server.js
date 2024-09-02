@@ -177,32 +177,73 @@ app.use(cors({
 /**
  * @swagger
  * /api/users:
- *   post:
- *     summary: Create a new user
+ *   get:
+ *     summary: Get all users with pagination and search
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of users per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: The search term to filter users by username
  *     responses:
- *       201:
- *         description: User created successfully
+ *       200:
+ *         description: A list of users with pagination data
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
  *       500:
  *         description: Internal Server Error
  */
-app.post('/api/users', jwtMiddleware, async (req, res) => {
+app.get('/api/users', jwtMiddleware, async (req, res) => {
     try {
-        const user = new User(req.body);
-        await user.save();
-        res.status(201).send(user);
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        const pageSize = parseInt(limit, 10);
+        const currentPage = parseInt(page, 10);
+
+        // Fetch all users with search filter applied
+        const query = search ? { username: { $regex: search, $options: 'i' } } : {};
+
+        const allUsers = await User.find(query).exec();
+
+        // Apply pagination
+        const totalUsers = allUsers.length;
+        const totalPages = Math.ceil(totalUsers / pageSize);
+
+        const usersToSend = allUsers
+            .slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        res.status(200).json({
+            users: usersToSend,
+            totalPages,
+            currentPage,
+            pageSize,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Internal Server Error" });
@@ -425,37 +466,90 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ userId: user._id }, 'bnb_aatika');
 
-        res.status(200).json({ token, id: user?._id, username: user.username });
+        res.status(200).json({ token, id: user?._id, username: user.username, first_name: user.first_name });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });
     }
 });
 
+
 /**
  * @swagger
  * /api/students:
  *   get:
- *     summary: Get all students
+ *     summary: Get all students with pagination and search
  *     tags: [Students]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of students per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: The search term to filter students by username
  *     responses:
  *       200:
- *         description: A list of students
+ *         description: A list of students with pagination data
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Student'
+ *               type: object
+ *               properties:
+ *                 students:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Student'
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
  *       500:
  *         description: Server Error
  */
 app.get('/api/students', jwtMiddleware, async (req, res) => {
     try {
-        const students = await Student.find().populate('user');
-        res.status(200).send(students);
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        const pageSize = parseInt(limit, 10);
+        const currentPage = parseInt(page, 10);
+
+        // Fetch all students with populated user data
+        const allStudents = await Student.find()
+            .populate('user')
+            .exec();
+
+        // Apply search filter on the fetched data
+        const filteredStudents = allStudents.filter(student => {
+            const username = student.user.username || '';
+            return username.toLowerCase().includes(search.toLowerCase());
+        });
+
+        // Apply pagination on the filtered data
+        const totalStudents = filteredStudents.length;
+        const totalPages = Math.ceil(totalStudents / pageSize);
+
+        const studentsToSend = filteredStudents
+            .slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        res.status(200).json({
+            students: studentsToSend,
+            totalPages,
+            currentPage,
+            pageSize,
+        });
     } catch (error) {
         res.status(500).send(error);
     }
@@ -667,26 +761,78 @@ app.delete('/api/students/:id', jwtMiddleware, async (req, res) => {
  * @swagger
  * /api/teachers:
  *   get:
- *     summary: Get all teachers
+ *     summary: Get all teachers with pagination and search
  *     tags: [Teachers]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of teachers per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: The search term to filter teachers by username
  *     responses:
  *       200:
- *         description: A list of teachers
+ *         description: A list of teachers with pagination data
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Teacher'
+ *               type: object
+ *               properties:
+ *                 teachers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Teacher'
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
  *       500:
  *         description: Server Error
  */
 app.get('/api/teachers', jwtMiddleware, async (req, res) => {
     try {
-        const teachers = await Teacher.find().populate('user');
-        res.status(200).send(teachers);
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        const pageSize = parseInt(limit, 10);
+        const currentPage = parseInt(page, 10);
+
+        // Fetch all teachers with populated user data
+        const allTeachers = await Teacher.find()
+            .populate('user')
+            .exec();
+
+        // Apply search filter on the fetched data
+        const filteredTeachers = allTeachers.filter(teacher => {
+            const username = teacher.user.username || '';
+            return username.toLowerCase().includes(search.toLowerCase());
+        });
+
+        // Apply pagination on the filtered data
+        const totalTeachers = filteredTeachers.length;
+        const totalPages = Math.ceil(totalTeachers / pageSize);
+
+        const teachersToSend = filteredTeachers
+            .slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        res.status(200).json({
+            teachers: teachersToSend,
+            totalPages,
+            currentPage,
+            pageSize,
+        });
     } catch (error) {
         res.status(500).send(error);
     }
@@ -2548,38 +2694,107 @@ app.get('/api/teachercourses/:teacherId', async (req, res) => {
  * @swagger
  * /api/courses:
  *   get:
- *     summary: Get all courses with the number of students, number of sessions, and attendance average
+ *     summary: Get all courses with pagination and optional search
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of courses per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: The search term to filter courses by name
  *     responses:
  *       200:
- *         description: A list of courses
+ *         description: A list of courses with pagination data
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   name:
- *                     type: string
- *                   department:
- *                     type: string
- *                   totalStudents:
- *                     type: integer
- *                   totalSessions:
- *                     type: integer
- *                   attendanceAverage:
- *                     type: number
- *                     format: float
+ *               type: object
+ *               properties:
+ *                 courses:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       department:
+ *                         type: string
+ *                       totalStudents:
+ *                         type: integer
+ *                       totalSessions:
+ *                         type: integer
+ *                       attendanceAverage:
+ *                         type: number
+ *                         format: float
+ *                       teacher:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           username:
+ *                             type: string
+ *                           first_name:
+ *                             type: string
+ *                           last_name:
+ *                             type: string
+ *                           role:
+ *                             type: string
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
  *       500:
  *         description: Server error
  */
 app.get('/api/courses', jwtMiddleware, async (req, res) => {
     try {
-        const courses = await Course.find()
-            .populate('students')
-            .populate('sessions')
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        const pageSize = parseInt(limit, 10);
+        const currentPage = parseInt(page, 10);
+
+        // Apply search filter
+        const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+
+        // Total count for pagination
+        const totalCourses = await Course.countDocuments(query);
+        const totalPages = Math.ceil(totalCourses / pageSize);
+
+        // Fetch courses with pagination and search filter
+        const courses = await Course.find(query)
+            .populate({
+                path: 'students',
+                select: 'user' // Optionally populate only the user field for students
+            })
+            .populate({
+                path: 'sessions',
+                populate: {
+                    path: 'teacher', // Populate the teacher field within sessions
+                    populate: {
+                        path: 'user', // Populate user within teacher
+                        select: 'username first_name last_name role' // Adjust fields as needed
+                    }
+                }
+            })
+            .skip((currentPage - 1) * pageSize)
+            .limit(pageSize)
             .exec();
 
+        // Calculate additional details
         const courseDetails = await Promise.all(courses.map(async (course) => {
             const totalSessions = course.sessions.length;
             const totalStudents = course.students.length;
@@ -2602,11 +2817,17 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
             };
         }));
 
-        res.json(courseDetails);
+        res.json({
+            courses: courseDetails,
+            totalPages,
+            currentPage,
+            pageSize
+        });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 /**
  * @swagger
@@ -2657,7 +2878,7 @@ app.get('/api/courses', jwtMiddleware, async (req, res) => {
 app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 3 } = req.query;
 
         const course = await Course.findById(id).populate('sessions').exec();
 
@@ -2681,11 +2902,12 @@ app.get('/api/courses/:id/history', jwtMiddleware, async (req, res) => {
             };
         }));
 
-        res.json({ sessionDetails, hasMore });
+        res.json({ course, sessionDetails, hasMore });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
+
 
 
 

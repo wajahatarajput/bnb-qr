@@ -29,6 +29,8 @@ export const AuthProvider = ({ children }) => {
                     setIsAuthenticated(true);
                     cookies.set("authToken", res.data.token);
                     cookies.set("username", res.data.username);
+
+                    cookies.set("first_name", res.data.first_name);
                     localStorage.setItem("authToken", res.data.token); // Assuming you store token in localStorage
                     cookies.set("id", res.data.id);
                     localStorage.setItem("id", res.data.id);

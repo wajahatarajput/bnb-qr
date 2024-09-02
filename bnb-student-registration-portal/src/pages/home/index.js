@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../providers';
 import { server } from '../../helpers';
 
-const Home = () => {
+const RegisterCourse = () => {
     const [course_code, setCourseCode] = useState('');
     const { cookies } = useAuth();
 
@@ -43,4 +43,4 @@ const Home = () => {
     );
 };
 
-export default Home;
+export default RegisterCourse;
