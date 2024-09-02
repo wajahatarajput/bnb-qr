@@ -64,7 +64,7 @@ const ManageAdmins = () => {
                 <input
                     type="text"
                     className="form-control"
-                    placeholder="Search by Username"
+                    placeholder="Search by CMS ID"
                     value={search}
                     onChange={handleSearch}
                 />

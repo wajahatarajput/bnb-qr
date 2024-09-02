@@ -9,6 +9,7 @@ import CourseSessions from "./pages/courses/sessions";
 import AttendanceRecords from "./pages/courses/attendance";
 import EditAdminPage from "./pages/profile";
 import TeacherCourses from "./pages/courses/TeacherCourses";
+import QRCodeGeneratorPage from "./pages/QR";
 
 function App() {
 
@@ -21,7 +22,10 @@ function App() {
         <Route exact path="/courses" element={<ProtectedRoute> <CourseDetailsPage /></ProtectedRoute>} />
         <Route exact path="/assignedcourses" element={<ProtectedRoute> <TeacherCourses /></ProtectedRoute>} />
         <Route exact path="/course-sessions/:courseId" element={<ProtectedRoute><CourseSessions /></ProtectedRoute>} />
-
+        <Route
+          path="/qr-code-generator"
+          element={<ProtectedRoute><QRCodeGeneratorPage /></ProtectedRoute>}
+        />
         <Route exact path="/profile/:id" element={<ProtectedRoute> <EditAdminPage /></ProtectedRoute>} />
         <Route path="/attendance/session/:sessionId" element={
           <ProtectedRoute>
