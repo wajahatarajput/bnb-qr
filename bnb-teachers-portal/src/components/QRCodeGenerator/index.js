@@ -104,13 +104,32 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     }, []);
 
     const handleToggle = useCallback(
-        async (studentId, session) => {
+        async (currentStudent, studentId, sessionId) => {
             try {
-                const isPresent = !attendance.includes(studentId); // Toggle the current state
-                socket.emit('markAttendance', { studentId, sessionId: session, isPresent, fingerprint: studentId }); // Emit socket event
+                // Determine the new isPresent status based on the current state
+                const status = !attendance.includes(studentId); // Toggle the current state
+
+                // Optionally define a fingerprint or unique identifier
+                const fingerprint = studentId; // Use studentId as the fingerprint, or adjust as needed
+
+                // Send the request to the API with all required parameters
+                const response = await server.put(`/api/attendance/modify/${sessionId}/${studentId}`, {
+                    isPresent: status,
+                    fingerprint
+                });
+
+                const { isPresent, student } = response?.data;
+
+
+                if (isPresent) {
+                    setAttendance(old => [...old, student]);
+                }
+                else {
+                    setAttendance(old => old.filter(id => id !== student));
+                }
+
             } catch (error) {
-                console.error('Error marking attendance:', error);
-                // Handle error, maybe show a toast or alert to the user
+                console.error('Error toggling attendance:', error);
             }
         },
         [attendance]
@@ -127,7 +146,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                         type="checkbox"
                         id={`custom-switch-${student?.user?._id}`}
                         checked={attendance.includes(student?.user?._id)}
-                        onChange={() => handleToggle(student?.user?._id, session)}
+                        onChange={() => handleToggle(student?._id, student?.user?._id, session)}
                         aria-label={`Toggle attendance for ${student?.user?.first_name}`}
                     />
                 </div>

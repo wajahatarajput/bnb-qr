@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { server } from '../../../helpers';
+import { toast } from 'react-toastify';
 
 const AttendanceRecords = () => {
     const { sessionId } = useParams();
@@ -38,17 +39,35 @@ const AttendanceRecords = () => {
         }
     };
 
-    const toggleAttendance = async (studentId) => {
-        setAttendanceRecords(prevRecords =>
-            prevRecords.map(record =>
-                record.student?._id === studentId
-                    ? { ...record, isPresent: !record.isPresent }
-                    : record
-            )
-        );
+    const toggleAttendance = async (studentId, currentStatus) => {
+        const newStatus = !currentStatus; // Toggle the current state
 
         try {
-            await server.put(`/api/attendance/modify/${sessionId}/${studentId}`);
+            // Optionally define a fingerprint or unique identifier
+            const fingerprint = studentId; // Use studentId as the fingerprint, or adjust as needed
+
+            // Send the request to the API with all required parameters
+            const response = await server.put(`/api/attendance/modify/${sessionId}/${studentId}`, {
+                isPresent: newStatus,
+                fingerprint
+            });
+
+            const { isPresent } = response?.data;
+
+            // Update local state to reflect the change
+            setAttendanceRecords(prevRecords =>
+                prevRecords.map(record =>
+                    record.student?._id === studentId
+                        ? { ...record, isPresent }
+                        : record
+                )
+            );
+
+            if (isPresent) {
+                toast.info('Successfully Marked Present!');
+            } else {
+                toast.info('Successfully Marked Absent!');
+            }
         } catch (error) {
             console.error('Error toggling attendance:', error);
         }
@@ -56,7 +75,6 @@ const AttendanceRecords = () => {
 
     const formatTimestamp = (timestamp) => {
         const date = new Date(timestamp);
-        console.log(date)
         return isNaN(date.getTime()) ? new Date().toLocaleString() : date.toLocaleString();
     };
 
@@ -70,7 +88,7 @@ const AttendanceRecords = () => {
                     <table className="table table-striped">
                         <thead>
                             <tr>
-                                <th scope="col">Student ID</th>
+                                <th scope="col">Student Name</th>
                                 <th scope="col">Present</th>
                                 <th scope="col">Timestamp</th>
                             </tr>
@@ -85,7 +103,7 @@ const AttendanceRecords = () => {
                                                 className="form-check-input"
                                                 type="checkbox"
                                                 checked={record.isPresent}
-                                                onChange={() => toggleAttendance(record.student?._id)}
+                                                onChange={() => toggleAttendance(record?.student?._id, record.isPresent)}
                                             />
                                         </div>
                                     </td>

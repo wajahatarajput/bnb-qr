@@ -3066,13 +3066,25 @@ app.put('/updateAttendance', async (req, res) => {
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
 /**
  * @swagger
  * /api/attendance/modify/:sessionId/:studentId
  *   put:
  *     summary: Toggle the attendance status of a student for a session
  *     tags: [Attendance]
+ *     parameters:
+ *       - name: sessionId
+ *         in: path
+ *         required: true
+ *         description: The ID of the session
+ *         schema:
+ *           type: string
+ *       - name: studentId
+ *         in: path
+ *         required: true
+ *         description: The ID of the student
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
@@ -3080,17 +3092,17 @@ app.put('/updateAttendance', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               sessionId:
+ *               isPresent:
+ *                 type: boolean
+ *                 description: The attendance status of the student
+ *                 example: true
+ *               fingerprint:
  *                 type: string
- *                 description: The ID of the session
- *                 example: 60d21b4667d0d8992e610c85
- *               studentId:
- *                 type: string
- *                 description: The ID of the student
- *                 example: 60d21b4967d0d8992e610c86
+ *                 description: The fingerprint or unique identifier of the student
+ *                 example: 1234567890
  *     responses:
  *       200:
- *         description: Attendance status successfully toggled
+ *         description: Attendance status successfully toggled or created
  *         content:
  *           application/json:
  *             schema:
@@ -3109,32 +3121,47 @@ app.put('/updateAttendance', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-// changed this api endpoint /api/attendace/toggle to /api/attendance/modify/:sessionId/:studentId where sessionId and studentId are parameters for api
 app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
     const { sessionId, studentId } = req.params;
-
-    // Log the input parameters
-    console.log(`Received sessionId: ${sessionId}, studentId: ${studentId}`);
+    const { isPresent, fingerprint } = req.body;
 
     try {
-        const attendance = await Attendance.findOne({
+
+
+        const student = await Student.findOne({ user: studentId });
+        // Find the attendance record
+        let attendance = await Attendance.findOne({
             session: new mongoose.Types.ObjectId(sessionId),
-            student: new mongoose.Types.ObjectId(studentId)
+            student: new mongoose.Types.ObjectId(student?._id)
         });
 
         if (!attendance) {
-            return res.status(404).send({ message: 'Attendance record not found' });
+            // If attendance record does not exist, create a new one with the provided status
+            attendance = new Attendance({
+                session: new mongoose.Types.ObjectId(sessionId),
+                student: new mongoose.Types.ObjectId(student?._id),
+                isPresent: isPresent, // Set the provided isPresent status
+                fingerprint: fingerprint // Optionally store the fingerprint
+            });
+        } else {
+            // If attendance record exists, update the status based on the provided isPresent
+            attendance.isPresent = isPresent;
+
+            // Optionally update the fingerprint if necessary
+            // if (fingerprint) {
+            //     attendance.fingerprint = fingerprint;
+            // }
         }
 
-        attendance.isPresent = !attendance.isPresent;
         await attendance.save();
 
-        res.send(attendance);
+        res.send({ session: sessionId, student: studentId, isPresent: attendance.isPresent });
     } catch (error) {
-        console.error('Error toggling attendance:', error);
+        console.error('Error toggling or creating attendance record:', error);
         res.status(500).send({ message: 'Internal server error', error });
     }
 });
+
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -3237,3 +3264,146 @@ app.get('/api/listcourses', jwtMiddleware, async (req, res) => {
     }
 });
 
+
+
+/**
+ * @swagger
+ * /api/teacher/courses:
+ *   get:
+ *     summary: Get all courses assigned to a specific teacher
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID of the teacher
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: The page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: The number of courses per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: The search term to filter courses by name
+ *     responses:
+ *       200:
+ *         description: A list of courses assigned to the teacher with pagination data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 courses:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       department:
+ *                         type: string
+ *                       totalStudents:
+ *                         type: integer
+ *                       totalSessions:
+ *                         type: integer
+ *                       attendanceAverage:
+ *                         type: number
+ *                         format: float
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/teacher/courses', jwtMiddleware, async (req, res) => {
+    try {
+        const { userId, page = 1, limit = 10, search = '' } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        const pageSize = parseInt(limit, 10);
+        const currentPage = parseInt(page, 10);
+
+        // Apply search filter
+        const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+
+
+        // Find the teacher by user ID
+        const teacher = await Teacher.findOne({ user: userId });
+
+        if (!teacher) {
+            return res.status(404).json({ message: 'Teacher not found' });
+        }
+
+        // Filter courses based on the teacher's assigned courses
+        const totalCourses = await Course.countDocuments({ ...query, _id: { $in: teacher.courses } });
+        const totalPages = Math.ceil(totalCourses / pageSize);
+
+        const courses = await Course.find({ ...query, _id: { $in: teacher.courses } })
+            .populate({
+                path: 'students',
+                select: 'user'
+            })
+            .populate({
+                path: 'sessions',
+                populate: {
+                    path: 'teacher',
+                    populate: {
+                        path: 'user',
+                        select: 'username first_name last_name role'
+                    }
+                }
+            })
+            .skip((currentPage - 1) * pageSize)
+            .limit(pageSize)
+            .exec();
+
+        // Calculate additional details
+        const courseDetails = await Promise.all(courses.map(async (course) => {
+            const totalSessions = course.sessions.length;
+            const totalStudents = course.students.length;
+            let totalAttendance = 0;
+            let presentCount = 0;
+
+            for (const session of course.sessions) {
+                const attendances = await Attendance.find({ session: session._id }).exec();
+                totalAttendance += attendances.length;
+                presentCount += attendances.filter(a => a.isPresent).length;
+            }
+
+            const attendanceAverage = totalAttendance ? (presentCount / totalAttendance) * 100 : 0;
+
+            return {
+                ...course.toObject(),
+                totalStudents,
+                totalSessions,
+                attendanceAverage
+            };
+        }));
+
+        res.json({
+            courses: courseDetails,
+            totalPages,
+            currentPage,
+            pageSize
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
