@@ -1284,14 +1284,19 @@ app.put('/api/courses/reassign/:courseId/:newTeacherId', async (req, res) => {
 
         // Find the current teacher associated with the course
         const currentTeacher = await Teacher.findOne({ courses: courseId });
+
         if (currentTeacher) {
             // Remove the course from the current teacher's list
             currentTeacher.courses = currentTeacher.courses.filter(course => course.toString() !== courseId);
             await currentTeacher.save();
         }
 
+
+        console.log(currentTeacher)
+
         // Find the new teacher by ID
         const newTeacher = await Teacher.findById(newTeacherId);
+        console.log(newTeacher)
         if (!newTeacher) {
             return res.status(404).json({ message: 'New teacher not found' });
         }
@@ -3122,3 +3127,95 @@ server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
     console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
+
+
+/**
+ * @swagger
+ * /api/listteachers:
+ *   get:
+ *     summary: Get all teachers
+ *     tags: [Teachers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of all teachers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   first_name:
+ *                     type: string
+ *                   last_name:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   joiningDate:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/listteachers', jwtMiddleware, async (req, res) => {
+    try {
+        const teachers = await Teacher.find()
+            .populate('user', 'first_name last_name') // Populating user details
+            .exec();
+
+        res.json(teachers);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/listcourses:
+ *   get:
+ *     summary: Get all courses
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of all courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   department:
+ *                     type: string
+ *                   course_code:
+ *                     type: string
+ *                   totalStudents:
+ *                     type: integer
+ *                   totalSessions:
+ *                     type: integer
+ *       500:
+ *         description: Server error
+ */
+app.get('/api/listcourses', jwtMiddleware, async (req, res) => {
+    try {
+        const courses = await Course.find()
+            .populate('students')
+            .populate('sessions')
+            .exec();
+
+        res.json(courses);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+

@@ -8,11 +8,11 @@ const AssignCourse = () => {
     const [courses, setCourses] = useState([]);
     const [teacherId, setTeacherId] = useState('');
     const [courseId, setCourseId] = useState('');
-    const [message, setMessage] = useState('');
+    // const [message, setMessage] = useState('');
 
     const getAllTeachers = useCallback(async () => {
         try {
-            const response = await server.get('/api/teachers');
+            const response = await server.get('/api/listteachers');
             setTeachers(response.data);
         } catch (error) {
             console.error(error);
@@ -21,7 +21,7 @@ const AssignCourse = () => {
 
     const getAllCourses = useCallback(async () => {
         try {
-            const response = await server.get('/api/courses');
+            const response = await server.get('/api/listcourses');
             setCourses(response.data);
         } catch (error) {
             console.error(error);
@@ -65,7 +65,7 @@ const AssignCourse = () => {
                 </select>
             </div>
             <button className="btn btn-primary" onClick={assignCourse}>Assign Course</button>
-            {message && <div className="mt-3">{message}</div>}
+            {/* {message && <div className="mt-3">{message}</div>} */}
         </div>
     );
 };

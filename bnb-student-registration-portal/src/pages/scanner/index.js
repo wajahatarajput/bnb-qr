@@ -85,23 +85,23 @@ const QRCodeScanner = () => {
 
             if (sessionLocation && location.longitude !== 0 && location.latitude !== 0) {
                 const [sLatitude, sLongitude] = sessionLocation;
-                const sessionCoords = { latitude: 24.8725513, longitude: 67.0173615 };
-                const currentCoords = { latitude: 24.8725399, longitude: 67.0173336 };
+                const sessionCoords = { latitude: sLatitude, longitude: sLongitude };
+                const currentCoords = { latitude: location.latitude, longitude: location.longitude };
 
                 const distance = haversineDistance(currentCoords, sessionCoords);
 
                 alert(distance)
 
-                // if (distance <= 10) { // 10 meters
-                socket.emit('markAttendance', {
-                    studentId: localStorage.getItem('id'),
-                    sessionId,
-                    isPresent: true,
-                    fingerprint
-                });
-                // } else {
-                //     toast.error('You are not within the required location range to mark attendance.');
-                // }
+                if (distance <= 1000) { // 10 meters
+                    socket.emit('markAttendance', {
+                        studentId: localStorage.getItem('id'),
+                        sessionId,
+                        isPresent: true,
+                        fingerprint
+                    });
+                } else {
+                    toast.error('You are not within the required location range to mark attendance.');
+                }
             }
         }
     }, [location, scannedData, fingerprint]);
@@ -115,14 +115,14 @@ const QRCodeScanner = () => {
                     qrCodeScannerRef.current.start(
                         { facingMode: "environment" },
                         {
-                            fps: 10, // Optional, frame per seconds for qr code scanning
-                            qrbox: { width: 250, height: 250 } // Optional, if you want bounded box UI
+                            fps: 50, // Optional, frame per seconds for qr code scanning
+                            qrbox: { width: 500, height: 500 } // Optional, if you want bounded box UI
                         },
                         (decodedText, decodedResult) => {
                             // Handle on success condition with the decoded text or result.
 
                             setScannedData(JSON.parse(decodedText));
-                            alert(decodedText);
+                            // alert(decodedText);
                             setError(null); // Clear any previous errors
                             stopScanning();
                         },
@@ -188,11 +188,11 @@ const QRCodeScanner = () => {
                             Camera not available. Please check your permissions or try another device.
                         </div>
                     )}
-                    {scannedData && (
+                    {/* {scannedData && (
                         <div className="alert alert-success mt-3" role="alert">
                             Scanned Data: {scannedData.sessionId}
                         </div>
-                    )}
+                    )} */}
                     {error && (
                         <div className="alert alert-danger mt-3" role="alert">
                             {error}

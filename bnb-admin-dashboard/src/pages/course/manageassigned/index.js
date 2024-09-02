@@ -20,7 +20,7 @@ function ManageAssignedCourses() {
 
     const getAllTeachers = useCallback(async () => {
         try {
-            const response = await server.get('/api/teachers');
+            const response = await server.get('/api/listteachers');
             setTeachers(response.data);
         } catch (error) {
             console.error(error);
@@ -46,6 +46,8 @@ function ManageAssignedCourses() {
         };
     }, [getCourseData, getAllTeachers]);
 
+    console.log(course)
+
     return (
         <div className="container">
             <h1>Edit Course Assignment</h1>
@@ -55,7 +57,7 @@ function ManageAssignedCourses() {
                     <input type="text" className="form-control" id="id" name="id" defaultValue={course?._id} required />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="teacherId" className="form-label">Teacher:</label>
+                    <label htmlFor="teacherId" className="form-label">Current Teacher: {course?.sessions[0]?.teacher?.user?.first_name} {course?.sessions[0]?.teacher?.user?.last_name}</label>
                     <select className="form-select" id="teacherId" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
                         <option value="">Select Teacher</option>
                         {teachers?.map((teacher) => (
