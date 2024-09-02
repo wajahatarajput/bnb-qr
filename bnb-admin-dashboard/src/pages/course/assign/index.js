@@ -50,7 +50,7 @@ const AssignCourse = () => {
                 <select className="form-select" id="teacherId" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
                     <option value="">Select Teacher</option>
                     {teachers?.map((teacher) => (
-                        <option key={teacher?._id} value={teacher?._id}>{teacher?.user?.first_name}</option>
+                        <option key={teacher?._id} value={teacher?._id}>{teacher?.user?.first_name}- {teacher?.user?.last_name}</option>
                     ))}
                 </select>
             </div>

@@ -14,11 +14,7 @@ const TeacherCourses = () => {
       const teacherId = user._id || cookies.get('id');
       if (teacherId) {
         // Fetch all courses by teacher ID
-        server.get('/teachers/courses?teacherId=${teacherId')
-       
-      
-
-
+        server.get(`/teachers/courses?teacherId=${teacherId}`)
           .then(response => {
             setCourses(response.data);
           })
@@ -31,10 +27,10 @@ const TeacherCourses = () => {
 
   const handleCourseChange = (event) => {
     const courseId = event.target.value;
-    setSelectedCourse(courseId);
+    setSelectedCourses(courseId);
 
     // Fetch sessions for the selected course
-    server.get(/courses/${courseId}/sessions)
+    server.get(`/courses/${courseId}/sessions`)
       .then(response => {
         setSessions(response.data);
       })
@@ -57,7 +53,7 @@ const TeacherCourses = () => {
               ))}
             </select>
           </div>
-          {selectedCourse && (
+          {selectedCourses && (
             <div className="mt-4">
               <h2>Sessions</h2>
               {sessions.length > 0 ? (

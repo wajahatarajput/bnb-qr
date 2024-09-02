@@ -40,8 +40,6 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                     setLatitude(position.coords.latitude);
                     setLongitude(position.coords.longitude);
 
-                    console.log(position);
-
                     server.post('/api/sessions', {
                         geoLocations: [
                             position.coords.longitude,
@@ -52,7 +50,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                         teacher: cookies.get('id')
                     }).then((res) => {
                         setSession(res.data?._id);
-                        server.get(`/api/courses/${courseId}`).then((response) => {
+                        server.get(`/api/coursescode/${courseId}`).then((response) => {
                             setCourseData(response.data);
                             setLoading(false);
                         });
@@ -77,7 +75,6 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
         socket.on('attendanceMarked', ({ session, student, status }) => {
-            console.log(student, session)
             if (status)
                 setAttendance(old => [...old, student])
             else
@@ -119,20 +116,19 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         [attendance]
     );
 
-
     // Memoize the list of student components
     const memoizedStudentList = useMemo(() => {
         return courseData?.students.map((student) => (
             <div className="d-flex gap-2 align-items-center" key={student._id} style={{ marginTop: '10px' }}>
-                <span className='w-75 text-truncate'>{student.user.first_name}</span>
+                <span className='w-75 text-truncate'>{student?.user?.first_name}</span>
                 <div className="form-check form-switch w-25">
                     <input
                         className="form-check-input"
                         type="checkbox"
-                        id={`custom-switch-${student?.user._id}`}
-                        checked={attendance.includes(student?.user._id)}
-                        onChange={() => handleToggle(student?.user._id, session)}
-                        aria-label={`Toggle attendance for ${student.user.first_name}`}
+                        id={`custom-switch-${student?.user?._id}`}
+                        checked={attendance.includes(student?.user?._id)}
+                        onChange={() => handleToggle(student?.user?._id, session)}
+                        aria-label={`Toggle attendance for ${student?.user?.first_name}`}
                     />
                 </div>
             </div>
@@ -167,6 +163,8 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
             {session && courseData && !loading ?
                 <>
                     <h3> SESSION ID : {session}</h3>
+                    <h5> Course Name : {courseData?.name}</h5>
+
 
                     <div className='d-block d-md-flex flex-row gap-3'>
                         <QRCode size={qrCodeSize} value={data} />

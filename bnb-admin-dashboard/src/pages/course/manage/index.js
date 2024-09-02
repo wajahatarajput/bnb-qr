@@ -60,6 +60,8 @@ const ManageCourses = () => {
                             <td>{course.department}</td>
                             <td>{course.course_code}</td>
                             <td className='d-flex gap-2'>
+
+                                <Link to={`/manageassignment/${course._id}`} className="btn btn-secondary">Manage Assigned Course</Link>
                                 <Link
                                     className="btn btn-secondary"
                                     to={`/editcourse/${course._id}`}

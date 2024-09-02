@@ -19,6 +19,7 @@ import EditAdminPage from "./pages/admin/edit";
 import AssignCourse from "./pages/course/assign";
 import CourseList from "./pages/overallhistory/CourseList";
 import CourseHistory from "./pages/overallhistory/CourseHistory";
+import ManageAssignedCourses from "./pages/course/manageassigned";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route exact path="/createcourse" element={<ProtectedRoute> <CreateCourse /></ProtectedRoute>} />
         <Route exact path="/managecourse" element={<ProtectedRoute> <ManageCourses /></ProtectedRoute>} />
         <Route exact path="/editcourse/:id" element={<ProtectedRoute> <EditCourse /></ProtectedRoute>} />
+        <Route exact path="/manageassignment/:id" element={<ProtectedRoute> <ManageAssignedCourses /></ProtectedRoute>} />
         <Route exact path="/assigncourse" element={<ProtectedRoute> <AssignCourse /></ProtectedRoute>} />
 
         {/* -------------------------------------------------------------------------------------------------- */}

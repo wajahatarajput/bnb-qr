@@ -7,6 +7,7 @@ import QRPage from "./pages/attandance";
 import CourseDetailsPage from "./pages/courses";
 import CourseSessions from "./pages/courses/sessions";
 import AttendanceRecords from "./pages/courses/attendance";
+import EditAdminPage from "./pages/profile";
 
 function App() {
 
@@ -18,6 +19,8 @@ function App() {
         <Route exact path="/qr-page" element={<ProtectedRoute> <QRPage /></ProtectedRoute>} />
         <Route exact path="/courses" element={<ProtectedRoute> <CourseDetailsPage /></ProtectedRoute>} />
         <Route exact path="/course-sessions/:courseId" element={<ProtectedRoute><CourseSessions /></ProtectedRoute>} />
+
+        <Route exact path="/profile/:id" element={<ProtectedRoute> <EditAdminPage /></ProtectedRoute>} />
         <Route path="/attendance/session/:sessionId" element={
           <ProtectedRoute>
             <AttendanceRecords />

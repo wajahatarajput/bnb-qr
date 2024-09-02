@@ -13,7 +13,7 @@ const StudentCourseHistoryPage = () => {
         const fetchCourses = async () => {
             try {
                 const studentId = cookies.get('id'); // Replace with actual logged-in student ID
-                const response = await server.get(`/studentcourses?studentId=${studentId}`);
+                const response = await server.get(`/studentcourses/${studentId}`);
 
                 setCourses(response.data[0].courses || []);
             } catch (err) {

@@ -1001,8 +1001,18 @@ app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find the course
-        const course = await Course.findOne({ course_code: id }).populate('students');
+        // Find the course by ID
+        const course = await Course.findById({ _id: id }).populate('students').populate({
+            path: 'sessions',
+            populate: {
+                path: 'teacher', // Populate teacher details in the sessions
+                select: 'user courses', // You can select specific fields if necessary
+                populate: {
+                    path: 'user', // Populate user details within the teacher
+                    select: 'first_name last_name _id'
+                }
+            }
+        });
 
         if (!course) {
             return res.status(404).send({ message: 'Course not found' });
@@ -1021,6 +1031,143 @@ app.get('/api/courses/:id', jwtMiddleware, async (req, res) => {
         res.status(500).send(error);
     }
 });
+
+
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   get:
+ *     summary: Get a course by ID
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The course ID or course code
+ *     responses:
+ *       200:
+ *         description: Course retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Server Error
+ */
+app.get('/api/coursescode/:id', jwtMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log(id)
+
+        // Find the course by ID
+        const course = await Course.findOne({ course_code: id }).populate('students');
+
+
+        if (!course) {
+            return res.status(404).send({ message: 'Course not found' });
+        }
+
+        // Extract student IDs
+        const studentIds = course.students.map(student => student._id);
+
+        // Find students
+        const students = await Student.find({ _id: { $in: studentIds } }).populate('user');
+
+        course.students = students;
+
+        res.send(course);
+    } catch (error) {
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * @swagger
+ * /api/courses/reassign/:courseId/:newTeacherId
+ *   put:
+ *     summary: Reassign a course to a new teacher
+ *     description: Remove the course assignment from the old teacher and assign it to a new teacher.
+ *     parameters:
+ *       - in: query
+ *         name: courseId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the course
+ *       - in: query
+ *         name: newTeacherId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the new teacher
+ *     responses:
+ *       200:
+ *         description: Successfully reassigned the course
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Course reassigned successfully
+ *                 course:
+ *                   type: object
+ *                   description: Updated course details
+ *       404:
+ *         description: Course or teacher not found
+ *       500:
+ *         description: Server error
+ */
+app.put('/api/courses/reassign/:courseId/:newTeacherId', async (req, res) => {
+    try {
+        const { courseId, newTeacherId } = req.params;
+
+        // Find the course by ID
+        const course = await Course.findOne({ _id: courseId });
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Find the current teacher associated with the course
+        const currentTeacher = await Teacher.findOne({ courses: courseId });
+        if (currentTeacher) {
+            // Remove the course from the current teacher's list
+            currentTeacher.courses = currentTeacher.courses.filter(course => course.toString() !== courseId);
+            await currentTeacher.save();
+        }
+
+        // Find the new teacher by ID
+        const newTeacher = await Teacher.findById(newTeacherId);
+        if (!newTeacher) {
+            return res.status(404).json({ message: 'New teacher not found' });
+        }
+
+        // Add the course to the new teacher's list
+        newTeacher.courses.push(course._id);
+        await newTeacher.save();
+
+        res.status(200).json({
+            message: 'Course reassigned successfully',
+            course,
+            newTeacher: {
+                _id: newTeacher._id,
+                user: newTeacher.user,
+            },
+        });
+    } catch (error) {
+        console.error('Error reassigning course:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 /**
  * @swagger
@@ -2173,8 +2320,9 @@ createDefaultAdmin();
  *       200:
  *         description: A list of courses.
  */
-app.get('/studentcourses', jwtMiddleware, async (req, res) => {
-    const studentId = req.query.studentId;
+app.get('/studentcourses/:studentId', jwtMiddleware, async (req, res) => {
+    const { studentId } = req.params;
+    console.log(studentId)
     const student = await Student.find({ user: studentId }).populate('courses');
     res.send(student || []);
 });
