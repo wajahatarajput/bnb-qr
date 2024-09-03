@@ -2412,7 +2412,8 @@ app.post('/registercourse/:userId/:course_code', jwtMiddleware, async (req, res)
 const io = socketIO(server, {
     cors: {
         origin: "*",  // Replace with the origin of your client app
-        methods: ["GET", "POST", 'PUT', 'DELETE']
+        methods: ["GET", "POST", 'PUT', 'DELETE'],
+        credentials: true
     }
 });  // Create a Socket.IO server instance
 

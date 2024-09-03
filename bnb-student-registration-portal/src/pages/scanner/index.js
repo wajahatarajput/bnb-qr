@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './QRCodeScanner.css';
@@ -30,6 +30,58 @@ const QRCodeScanner = () => {
     };
 
 
+
+    const requestCameraPermission = useCallback(async () => {
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (cameras && cameras.length) {
+                qrCodeScannerRef.current = new Html5Qrcode(qrCodeRegionId);
+                qrCodeScannerRef.current.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 50,
+                        qrbox: { width: 500, height: 500 }
+                    },
+                    (decodedText) => {
+                        setScannedData(JSON.parse(decodedText));
+                        setError(null);
+                        stopScanning();
+                    },
+                    (errorMessage) => {
+                        if (errorMessage.name !== "NotFoundException") {
+                            setError(errorMessage.message);
+                        }
+                    }
+                ).catch(err => {
+                    console.error('Unable to start scanning:', err);
+                    setIsCameraAvailable(false);
+                    setError('Unable to start scanning');
+                });
+            }
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            setIsCameraAvailable(false);
+            setError('Error accessing camera');
+        }
+    }, []);
+
+    const stopScanning = () => {
+        if (qrCodeScannerRef.current && qrCodeScannerRef.current.isScanning()) {
+            qrCodeScannerRef.current.stop().then(() => {
+                console.log('QR Code scanning stopped.');
+                const element = document.getElementById(qrCodeRegionId);
+                if (element) {
+                    element.innerHTML = '';
+                }
+            }).catch(err => {
+                console.error('Error stopping QR Code scanner:', err);
+            });
+        } else {
+            console.log('Scanner is not running.');
+        }
+    };
+
+
     const haversineDistance = (coords1, coords2) => {
         const toRad = (value) => value * Math.PI / 180;
 
@@ -57,7 +109,7 @@ const QRCodeScanner = () => {
                 const response = await fetch('https://ipinfo.io/json');
                 const data = await response.json();
                 const [latitude, longitude] = data.loc.split(',');
-                setLocation({ latitude: parseFloat(latitude), longitude: parseFloat(longitude) });
+                setLocation({ latitude: parseFloat(longitude), longitude: parseFloat(latitude) });
                 setFetchingLocation(false); // Stop fetching location
             } catch (error) {
                 console.error('Error fetching location:', error);
@@ -70,6 +122,7 @@ const QRCodeScanner = () => {
 
         socket.on('attendanceMarked', ({ student, status }) => {
             if (status && student === localStorage.getItem('id')) {
+                stopScanning();
                 toast.success('Attendance Marked Successfully!');
             } else {
                 toast.error('Attendance Unsuccessful!');
@@ -111,57 +164,9 @@ const QRCodeScanner = () => {
         }
     }, [location, scannedData, fingerprint]);
 
+
+
     useEffect(() => {
-        const requestCameraPermission = async () => {
-            try {
-                const cameras = await Html5Qrcode.getCameras();
-                if (cameras && cameras.length) {
-                    qrCodeScannerRef.current = new Html5Qrcode(qrCodeRegionId);
-                    qrCodeScannerRef.current.start(
-                        { facingMode: "environment" },
-                        {
-                            fps: 50,
-                            qrbox: { width: 500, height: 500 }
-                        },
-                        (decodedText) => {
-                            setScannedData(JSON.parse(decodedText));
-                            setError(null);
-                            stopScanning();
-                        },
-                        (errorMessage) => {
-                            if (errorMessage.name !== "NotFoundException") {
-                                setError(errorMessage.message);
-                            }
-                        }
-                    ).catch(err => {
-                        console.error('Unable to start scanning:', err);
-                        setIsCameraAvailable(false);
-                        setError('Unable to start scanning');
-                    });
-                }
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                setIsCameraAvailable(false);
-                setError('Error accessing camera');
-            }
-        };
-
-        const stopScanning = () => {
-            if (qrCodeScannerRef.current && qrCodeScannerRef.current.isScanning()) {
-                qrCodeScannerRef.current.stop().then(() => {
-                    console.log('QR Code scanning stopped.');
-                    const element = document.getElementById(qrCodeRegionId);
-                    if (element) {
-                        element.innerHTML = '';
-                    }
-                }).catch(err => {
-                    console.error('Error stopping QR Code scanner:', err);
-                });
-            } else {
-                console.log('Scanner is not running.');
-            }
-        };
-
         if (!fetchingLocation) {
             requestCameraPermission();
         }
@@ -169,7 +174,7 @@ const QRCodeScanner = () => {
         return () => {
             stopScanning();
         };
-    }, [fetchingLocation]);
+    }, [fetchingLocation, requestCameraPermission]);
 
     return (
         <div className="container mt-5">

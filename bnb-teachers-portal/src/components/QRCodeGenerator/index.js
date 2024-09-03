@@ -68,6 +68,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
         socket.on('attendanceMarked', ({ session, student, status }) => {
+            console.log(student, status)
             if (status)
                 setAttendance(old => [...old, student])
             else
