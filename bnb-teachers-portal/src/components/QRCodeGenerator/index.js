@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 
 const socket = io(SERVER_URL); // Assuming your server is running on localhost:3001
 
-
 const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [latitude, setLatitude] = useState(0);
     const [longitude, setLongitude] = useState(0);
@@ -17,6 +16,7 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [courseData, setCourseData] = useState(undefined);
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [locationError, setLocationError] = useState('');
     const navigate = useNavigate();
 
     const { cookies } = useAuth();
@@ -33,44 +33,37 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     });
 
     useEffect(() => {
-        // Get user's current location using Geolocation API
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setLatitude(position.coords.latitude);
-                    setLongitude(position.coords.longitude);
+        // Fetch location using IPInfo API
+        const fetchLocation = async () => {
+            try {
+                const response = await fetch('https://ipinfo.io/json');
+                const locationData = await response.json();
+                const [lat, lon] = locationData.loc.split(',');
 
-                    server.post('/api/sessions', {
-                        geoLocations: [
-                            position.coords.longitude,
-                            position.coords.latitude
-                        ],
-                        courseId,
-                        roomNumber,
-                        teacher: cookies.get('id')
-                    }).then((res) => {
-                        setSession(res.data?._id);
-                        server.get(`/api/coursescode/${courseId}`).then((response) => {
-                            setCourseData(response.data);
-                            setLoading(false);
-                        });
+                setLatitude(parseFloat(lat));
+                setLongitude(parseFloat(lon));
+
+                await server.post('/api/sessions', {
+                    geoLocations: [lon, lat],
+                    courseId,
+                    roomNumber,
+                    teacher: cookies.get('id')
+                }).then((res) => {
+                    setSession(res.data?._id);
+                    server.get(`/api/coursescode/${courseId}`).then((response) => {
+                        setCourseData(response.data);
+                        setLoading(false);
                     });
-                },
-                (error) => {
-                    console.error('Error getting location:', error);
-                },
-                {
-                    enableHighAccuracy: true, // Request high accuracy
-                    timeout: 5000,            // Optional: Set timeout (in milliseconds)
-                    maximumAge: 0             // Optional: Do not use cached location
-                }
-            );
-        } else {
-            console.error('Geolocation is not supported by this browser.');
-        }
+                });
+            } catch (error) {
+                console.error('Error fetching location:', error);
+                setLocationError('Error fetching location data.');
+                setLoading(false);
+            }
+        };
+
+        fetchLocation();
     }, [cookies, courseId, roomNumber]);
-
-
 
     useEffect(() => {
         // Listen for attendanceUpdated event from the server
@@ -120,7 +113,6 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
                 const { isPresent, student } = response?.data;
 
-
                 if (isPresent) {
                     setAttendance(old => [...old, student]);
                 }
@@ -154,8 +146,6 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
         ));
     }, [courseData, session, attendance, handleToggle]);
 
-
-
     // Determine the QR code size based on the device
     const qrCodeSize = isMobileDevice() ? 300 : 500;
 
@@ -175,16 +165,21 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     return (
         <div className='d-flex justify-content-center align-items-center w-100 flex-column p-5'>
-
             <div className='d-flex justify-content-end w-100 my-5'>
                 <button className='btn btn-secondary rounded' onClick={handleFinishSession}>Finish Session</button>
             </div>
-            {session && courseData && !loading ?
+            {loading ? (
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            ) : locationError ? (
+                <div className="alert alert-danger" role="alert">
+                    {locationError}
+                </div>
+            ) : session && courseData ? (
                 <>
                     <h3> SESSION ID : {session}</h3>
                     <h5> Course Name : {courseData?.name}</h5>
-
-
                     <div className='d-block d-md-flex flex-row gap-3'>
                         <QRCode size={qrCodeSize} value={data} />
                         <hr />
@@ -193,15 +188,13 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                             <hr />
                             {memoizedStudentList}
                         </div>
-
                     </div>
                 </>
-                :
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+            ) : (
+                <div className="alert alert-warning" role="alert">
+                    No session data available.
                 </div>
-            }
-
+            )}
         </div>
     );
 };
