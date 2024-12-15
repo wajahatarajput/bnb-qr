@@ -28,25 +28,25 @@ function App() {
         <Route exact path="/" element={<Login />} />
         <Route exact path="/dashboard" element={<ProtectedRoute> <Home /></ProtectedRoute>} />
 
-        {/* -------------------------------------------------------------------------------------------------- */}
+        {/* ----------------------------------------------Another Admin, Manage, See ---------------------------------------------------- */}
         <Route exact path="/manageadmins" element={<ProtectedRoute> <ManageAdmins /> </ProtectedRoute>} />
         <Route exact path="/addadmin" element={<ProtectedRoute> <AddAdminPage /> </ProtectedRoute>} />
         <Route exact path="/editadmin/:id" element={<ProtectedRoute><EditAdminPage /></ProtectedRoute>} />
 
 
-        {/* -------------------------------------------------------------------------------------------------- */}
+        {/* -------------------------------------Admission Dept -> Admin can Create Courses and Assign Courses to Teachers  and manage them ------------------------------------------------------------- */}
         <Route exact path="/createcourse" element={<ProtectedRoute> <CreateCourse /></ProtectedRoute>} />
         <Route exact path="/managecourse" element={<ProtectedRoute> <ManageCourses /></ProtectedRoute>} />
         <Route exact path="/editcourse/:id" element={<ProtectedRoute> <EditCourse /></ProtectedRoute>} />
         <Route exact path="/manageassignment/:id" element={<ProtectedRoute> <ManageAssignedCourses /></ProtectedRoute>} />
         <Route exact path="/assigncourse" element={<ProtectedRoute> <AssignCourse /></ProtectedRoute>} />
 
-        {/* -------------------------------------------------------------------------------------------------- */}
+        {/* ---------------------------------------Admin can add Students or Manage them ----------------------------------------------------------- */}
         <Route exact path="/managestudent" element={<ProtectedRoute> <ManageStudents /> </ProtectedRoute>} />
         <Route exact path="/addstudent" element={<ProtectedRoute> <AddStudentPage /> </ProtectedRoute>} />
         <Route exact path="/editstudent/:id" element={<ProtectedRoute><EditStudentPage /></ProtectedRoute>} />
 
-        {/* -------------------------------------------------------------------------------------------------- */}
+        {/* -------------------------------Admin can Manage Teachers and Add them ------------------------------------------------------------------- */}
         <Route exact path="/manageteachers" element={<ProtectedRoute> <ManageTeachers /> </ProtectedRoute>} />
         <Route exact path="/addteacher" element={<ProtectedRoute> <AddTeacherPage /> </ProtectedRoute>} />
         <Route exact path="/editteacher/:id" element={<ProtectedRoute><EditTeacherPage /></ProtectedRoute>} />

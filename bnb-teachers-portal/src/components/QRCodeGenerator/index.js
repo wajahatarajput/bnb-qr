@@ -12,6 +12,7 @@ const socket = io(SERVER_URL); // Assuming your server is running on localhost:3
 const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const [latitude, setLatitude] = useState(0);
     const [longitude, setLongitude] = useState(0);
+    const [accuracy, setAccuracy] = useState(0);
     const [session, setSession] = useState('');
     const [courseData, setCourseData] = useState(undefined);
     const [attendance, setAttendance] = useState([]);
@@ -24,7 +25,8 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
     const data = JSON.stringify({
         geoLocations: [
             longitude,
-            latitude
+            latitude,
+            accuracy
         ],
         sessionId: session,
         courseId,
@@ -34,30 +36,80 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
 
     useEffect(() => {
         // Fetch location using IPInfo API
+        // const fetchLocation = async () => {
+        //     try {
+        //         const response = await fetch('https://ipinfo.io/json');
+        //         const locationData = await response.json();
+        //         const [lat, lon] = locationData.loc.split(',');
+
+        //         setLatitude(parseFloat(lat));
+        //         setLongitude(parseFloat(lon));
+
+        //         await server.post('/api/sessions', {
+        //             geoLocations: [lon, lat],
+        //             courseId,
+        //             roomNumber,
+        //             teacher: cookies.get('id')
+        //         }).then((res) => {
+        //             setSession(res.data?._id);
+        //             server.get(`/api/coursescode/${courseId}`).then((response) => {
+        //                 setCourseData(response.data);
+        //                 setLoading(false);
+        //             });
+        //         });
+        //     } catch (error) {
+        //         console.error('Error fetching location:', error);
+        //         setLocationError('Error fetching location data.');
+        //         setLoading(false);
+        //     }
+        // };
+
+        const options = {
+            enableHighAccuracy: true, // Use GPS for high accuracy
+            timeout: 10000,           // Wait a maximum of 10 seconds
+            maximumAge: 0             // Do not use cached positions
+        };
+
+
         const fetchLocation = async () => {
-            try {
-                const response = await fetch('https://ipinfo.io/json');
-                const locationData = await response.json();
-                const [lat, lon] = locationData.loc.split(',');
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        setLatitude(latitude);
+                        setLongitude(longitude);
+                        setAccuracy(accuracy);
 
-                setLatitude(parseFloat(lat));
-                setLongitude(parseFloat(lon));
+                        console.log(accuracy)
 
-                await server.post('/api/sessions', {
-                    geoLocations: [lon, lat],
-                    courseId,
-                    roomNumber,
-                    teacher: cookies.get('id')
-                }).then((res) => {
-                    setSession(res.data?._id);
-                    server.get(`/api/coursescode/${courseId}`).then((response) => {
-                        setCourseData(response.data);
+                        try {
+                            await server.post('/api/sessions', {
+                                geoLocations: [longitude, latitude],
+                                courseId,
+                                roomNumber,
+                                teacher: cookies.get('id')
+                            }).then((res) => {
+                                setSession(res.data?._id);
+                                server.get(`/api/coursescode/${courseId}`).then((response) => {
+                                    setCourseData(response.data);
+                                    setLoading(false);
+                                });
+                            });
+                        } catch (error) {
+                            console.error('Error creating session or fetching course data:', error);
+                            setLocationError('Error creating session or fetching course data.');
+                            setLoading(false);
+                        }
+                    },
+                    (error) => {
+                        console.error('Error fetching location:', error);
+                        setLocationError('Failed to fetch location. Please enable location services.');
                         setLoading(false);
-                    });
-                });
-            } catch (error) {
-                console.error('Error fetching location:', error);
-                setLocationError('Error fetching location data.');
+                    },
+                    options
+                );
+            } else {
+                setLocationError('Geolocation is not supported by this browser.');
                 setLoading(false);
             }
         };
@@ -181,6 +233,8 @@ const QRCodeGenerator = ({ courseId, roomNumber }) => {
                 <>
                     <h3> SESSION ID : {session}</h3>
                     <h5> Course Name : {courseData?.name}</h5>
+
+                    <h5> {JSON.stringify(longitude)},{latitude}</h5>
                     <div className='d-block d-md-flex flex-row gap-3'>
                         <QRCode size={qrCodeSize} value={data} />
                         <hr />

@@ -30,7 +30,6 @@ const QRCodeScanner = () => {
     };
 
 
-
     const requestCameraPermission = useCallback(async () => {
         try {
             const cameras = await Html5Qrcode.getCameras();
@@ -45,7 +44,7 @@ const QRCodeScanner = () => {
                     (decodedText) => {
                         setScannedData(JSON.parse(decodedText));
                         setError(null);
-                        stopScanning();
+                        // stopScanning();
                     },
                     (errorMessage) => {
                         if (errorMessage.name !== "NotFoundException") {
@@ -66,18 +65,22 @@ const QRCodeScanner = () => {
     }, []);
 
     const stopScanning = () => {
-        if (qrCodeScannerRef.current && qrCodeScannerRef.current.isScanning()) {
-            qrCodeScannerRef.current.stop().then(() => {
-                console.log('QR Code scanning stopped.');
-                const element = document.getElementById(qrCodeRegionId);
-                if (element) {
-                    element.innerHTML = '';
-                }
-            }).catch(err => {
-                console.error('Error stopping QR Code scanner:', err);
-            });
-        } else {
-            console.log('Scanner is not running.');
+        try {
+            if (qrCodeScannerRef.current) {
+                qrCodeScannerRef.current.stop().then(() => {
+                    console.log('QR Code scanning stopped.');
+                    const element = document.getElementById(qrCodeRegionId);
+                    if (element) {
+                        element.innerHTML = '';
+                    }
+                }).catch(err => {
+                    console.error('Error stopping QR Code scanner:', err);
+                });
+            } else {
+                console.log('Scanner is not running.');
+            }
+        } catch (err) {
+            console.log(err)
         }
     };
 
@@ -103,38 +106,56 @@ const QRCodeScanner = () => {
     };
 
     useEffect(() => {
-        // Fetch the location using the IP API and update the state
+        const options = {
+            enableHighAccuracy: true, // Use GPS for high accuracy
+            timeout: 10000,           // Wait a maximum of 10 seconds
+            maximumAge: 0             // Do not use cached positions
+        };
+
+
         const fetchLocation = async () => {
-            try {
-                const response = await fetch('https://ipinfo.io/json');
-                const data = await response.json();
-                const [latitude, longitude] = data.loc.split(',');
-                setLocation({ latitude: parseFloat(longitude), longitude: parseFloat(latitude) });
-                setFetchingLocation(false); // Stop fetching location
-            } catch (error) {
-                console.error('Error fetching location:', error);
-                setError('Failed to fetch location');
-                setFetchingLocation(false); // Stop fetching location even on error
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+                        alert(accuracy)
+                        setLocation({ latitude, longitude, accuracy });
+                        setFetchingLocation(false); // Stop fetching location
+                    },
+                    (error) => {
+                        console.error('Error fetching location:', error);
+                        setError('Failed to fetch location. Please enable location services.');
+                        setFetchingLocation(false); // Stop fetching location even on error
+                    },
+                    options
+                );
+            } else {
+                setError('Geolocation is not supported by this browser.');
+                setFetchingLocation(false);
             }
         };
 
         fetchLocation();
+        try {
 
-        socket.on('attendanceMarked', ({ student, status }) => {
-            if (status && student === localStorage.getItem('id')) {
-                stopScanning();
-                toast.success('Attendance Marked Successfully!');
-            } else {
-                toast.error('Attendance Unsuccessful!');
-            }
-        });
+            socket.on('attendanceMarked', ({ student, status }) => {
+                if (status && student === localStorage.getItem('id')) {
+                    stopScanning();
+                    toast.success('Attendance Marked Successfully!');
+                } else {
+                    toast.error('Attendance Unsuccessful!');
+                }
+            });
+        } catch (err) {
+            console.log(err)
+        }
     }, []);
 
     useEffect(() => {
         loadFingerprint();
-        socket.on('fingerprintFound', () => {
-            toast.error('Attendance Unsuccessful! Fingerprint Already Exists!');
-        });
+        // socket.on('fingerprintFound', () => {
+        //     toast.error('Attendance Unsuccessful! Fingerprint Already Exists!');
+        // });
     }, []);
 
     useEffect(() => {
@@ -142,24 +163,25 @@ const QRCodeScanner = () => {
             const { sessionId, geoLocations: sessionLocation } = scannedData;
 
             if (sessionLocation && location.longitude !== 0 && location.latitude !== 0) {
-                const [sLatitude, sLongitude] = sessionLocation;
+                const [sLatitude, sLongitude, sAccuracy] = sessionLocation;
                 const sessionCoords = { latitude: sLatitude, longitude: sLongitude };
-                const currentCoords = { latitude: location.latitude, longitude: location.longitude };
+                const currentCoords = { latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy };
 
-                const distance = haversineDistance(currentCoords, sessionCoords);
+                // const distance = haversineDistance(currentCoords, sessionCoords);
 
-                alert(distance)
+                // alert(distance)
+                // alert(sAccuracy / location.accuracy + 10)
 
-                if (distance <= 10) { // 10 meters
-                    socket.emit('markAttendance', {
-                        studentId: localStorage.getItem('id'),
-                        sessionId,
-                        isPresent: true,
-                        fingerprint
-                    });
-                } else {
-                    toast.error('You are not with in required distance to scan the QR!');
-                }
+                // if (distance <= sAccuracy + location.accuracy + 10) { // 10 meters
+                socket.emit('markAttendance', {
+                    studentId: localStorage.getItem('id'),
+                    sessionId,
+                    isPresent: true,
+                    fingerprint
+                });
+                // } else {
+                //     toast.error('You are not with in required distance to scan the QR!');
+                // }
             }
         }
     }, [location, scannedData, fingerprint]);
@@ -172,7 +194,11 @@ const QRCodeScanner = () => {
         }
 
         return () => {
-            stopScanning();
+            try {
+                stopScanning();
+            } catch (ex) {
+                console.log(ex)
+            }
         };
     }, [fetchingLocation, requestCameraPermission]);
 
