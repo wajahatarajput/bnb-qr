@@ -1248,18 +1248,19 @@ app.get('/api/coursescode/:id', jwtMiddleware, async (req, res) => {
 
 /**
  * @swagger
- * /api/courses/reassign/:courseId/:newTeacherId
+ * /api/courses/reassign/{courseId}/{newTeacherId}:
  *   put:
  *     summary: Reassign a course to a new teacher
  *     description: Remove the course assignment from the old teacher and assign it to a new teacher.
+ *     tags: [Courses]
  *     parameters:
- *       - in: query
+ *       - in: path
  *         name: courseId
  *         schema:
  *           type: string
  *         required: true
  *         description: The ID of the course
- *       - in: query
+ *       - in: path
  *         name: newTeacherId
  *         schema:
  *           type: string
@@ -1279,11 +1280,19 @@ app.get('/api/coursescode/:id', jwtMiddleware, async (req, res) => {
  *                 course:
  *                   type: object
  *                   description: Updated course details
+ *                 newTeacher:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     user:
+ *                       type: string
  *       404:
  *         description: Course or teacher not found
  *       500:
  *         description: Server error
  */
+
 app.put('/api/courses/reassign/:courseId/:newTeacherId', async (req, res) => {
     try {
         const { courseId, newTeacherId } = req.params;
@@ -2409,6 +2418,92 @@ app.post('/registercourse/:userId/:course_code', jwtMiddleware, async (req, res)
 });
 
 
+/**
+ * @swagger
+ * /api/checkcourseassignment:
+ *   get:
+ *     summary: Check if a course is assigned to a teacher
+ *     description: Returns whether a course is assigned to a teacher based on the teacher's user ID and course code.
+ *     tags:
+ *       - Courses
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The user ID of the teacher.
+ *       - in: query
+ *         name: courseCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The course code to check.
+ *     responses:
+ *       200:
+ *         description: Course is assigned to the teacher.
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Course is assigned to the teacher."
+ *       400:
+ *         description: Missing required parameters.
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: "User ID and Course Code are required."
+ *       404:
+ *         description: Course or assignment not found.
+ *         content:
+ *           application/json:
+ *             examples:
+ *               CourseNotFound:
+ *                 summary: Course not found.
+ *                 value:
+ *                   error: "Course not found."
+ *               AssignmentNotFound:
+ *                 summary: Assignment not found.
+ *                 value:
+ *                   message: "Course is not assigned to the teacher."
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: "Internal server error."
+ */
+// GET request to check if a course is assigned to a teacher
+app.get('/api/checkcourseassignment/:userId/:courseCode', async (req, res) => {
+    const { userId, courseCode } = req.params;
+
+    try {
+        // Validate input
+        if (!userId || !courseCode) {
+            return res.status(400).json({ error: 'User ID and Course Code are required.' });
+        }
+
+        // Find the course by course code
+        const course = await Course.findOne({ course_code: courseCode });
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found.' });
+        }
+
+        // Find the teacher by user ID and check if the course is assigned
+        const teacher = await Teacher.findOne({ user: userId, courses: course._id });
+        if (teacher) {
+            return res.status(200).json({ message: 'Course is assigned to the teacher.' });
+        } else {
+            return res.status(404).json({ message: 'Course is not assigned to the teacher.' });
+        }
+    } catch (error) {
+        console.error('Error checking course assignment:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
+
+
 const io = socketIO(server, {
     cors: {
         origin: "*",  // Replace with the origin of your client app
@@ -3091,10 +3186,9 @@ app.put('/updateAttendance', async (req, res) => {
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 /**
  * @swagger
- * /api/attendance/modify/:sessionId/:studentId
+ * /api/attendance/modify/{sessionId}/{studentId}:
  *   put:
  *     summary: Toggle the attendance status of a student for a session
  *     tags: [Attendance]
@@ -3125,7 +3219,7 @@ app.put('/updateAttendance', async (req, res) => {
  *               fingerprint:
  *                 type: string
  *                 description: The fingerprint or unique identifier of the student
- *                 example: 1234567890
+ *                 example: "1234567890"
  *     responses:
  *       200:
  *         description: Attendance status successfully toggled or created
@@ -3134,8 +3228,6 @@ app.put('/updateAttendance', async (req, res) => {
  *             schema:
  *               type: object
  *               properties:
- *                 _id:
- *                   type: string
  *                 session:
  *                   type: string
  *                 student:
@@ -3147,6 +3239,7 @@ app.put('/updateAttendance', async (req, res) => {
  *       500:
  *         description: Internal server error
  */
+
 app.put('/api/attendance/modify/:sessionId/:studentId', async (req, res) => {
     const { sessionId, studentId } = req.params;
     const { isPresent, fingerprint } = req.body;

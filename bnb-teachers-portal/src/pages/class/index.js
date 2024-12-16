@@ -1,18 +1,50 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { useAuth } from '../../providers';
+import { toast } from 'react-toastify';
+import { server } from '../../helpers';
+
 
 const QRForm = () => {
     const navigate = useNavigate();
+    const { cookies } = useAuth();
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        navigate('/qr-page', {
-            state: {
-                courseId: event.target[0].value,
-                roomNumber: event.target[1].value,
-            },
-        });
+
+        try {
+            // Get userId from cookies
+            const userId = cookies.get('id');
+
+            if (!userId) {
+                toast.error('User ID not found in cookies.');
+                return;
+            }
+
+            const response = await server.get(`/api/checkcourseassignment/${userId}/${event.target.courseId.value}`);
+
+
+            if (response?.data?.message === 'Course is assigned to the teacher.') {
+                toast.success('Course is assigned to the teacher.');
+                // Retrieve form values
+                const courseId = event.target.courseId.value;
+                const roomNumber = event.target.roomNumber.value;
+
+                // Navigate to the QR page with state
+                navigate('/qr-page', {
+                    state: {
+                        userId,
+                        courseId,
+                        roomNumber,
+                    },
+                });
+            }
+
+
+
+        } catch (err) {
+            toast.error(err.response.data.message)
+        }
     };
 
     return (
@@ -23,11 +55,11 @@ const QRForm = () => {
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
                             <label htmlFor="courseId" className="form-label">Course ID</label>
-                            <input type="text" className="form-control" id="courseId" />
+                            <input type="text" className="form-control" id="courseId" name="courseId" required />
                         </div>
                         <div className="mb-3">
                             <label htmlFor="roomNumber" className="form-label">Room Number</label>
-                            <input type="text" className="form-control" id="roomNumber" />
+                            <input type="text" className="form-control" id="roomNumber" name="roomNumber" required />
                         </div>
                         <button type="submit" className="btn btn-primary">Generate QR</button>
                     </form>
